@@ -1,0 +1,15 @@
+# Доп. приколы
+.vscode/
+.cursor/
+
+# Конфиденциальность
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Для пользователей macOS
+.DS_Store
