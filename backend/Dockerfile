@@ -34,7 +34,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/app /app/app
-COPY --from=builder /app/main.py /app/main.py
 
 EXPOSE 8000
 
