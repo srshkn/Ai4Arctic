@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from src.core import get_settings
-from src.database import create_db_and_tables
+from src.db import create_db_and_tables
 
 settings = get_settings()
 
