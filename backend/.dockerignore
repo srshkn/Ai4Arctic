@@ -1,12 +1,33 @@
+# Git
 .git
 .gitignore
+
+# Python
 .pytest_cache
-.mypy_cache
 .venv
 __pycache__
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+.ruff_cache
+
+# IDE
+.vscode
+.cursor
+.idea
+
+# Env files
 .env
-postgres_data
-test
+.env.example
+
+# CI/CD
+.github
+
+# Tests
+tests
+
+# Docs
+README.md
+LICENSE
+
+# Docker
+Dockerfile
+docker-compose.yml
