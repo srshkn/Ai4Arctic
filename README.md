@@ -30,7 +30,7 @@ docker compose --env-file ./backend/.env up --build
 Ai4Arctic/
 │
 ├── .github/workflows        # CI/CD
-│   └── backend.yml
+│   └── backend-ci.yml
 │
 ├── backend/
 │
