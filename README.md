@@ -14,54 +14,20 @@ Ai4Arctic — web-сервис мониторинга вечной мерзло�
 ```
 Ai4Arctic/
 │
-├── .github/workflows         # CI/CD
-│   ├── ruff.yml
-│   ├── test.yml
-│   └── docker-ci.yml
+├── .github/workflows        # CI/CD
+│   └── backend.yml
 │
 ├── backend/
-│   ├── app/
-│   │   ├── api/              # роуты (endpoints)
-│   │   ├── core/             # конфиги, настройки, security
-│   │   ├── models/           # ORM модели (SQLAlchemy)
-│   │   ├── schemas/          # Pydantic схемы
-│   │   ├── services/         # бизнес-логика
-│   │   ├── db/               # подключение к БД, сессии, миграции
-│   │   ├── gis/              # работа с GeoPandas и геоданными
-│   │   ├── utils/            # вспомогательные функции
-│   │   └── main.py           # точка входа FastAPI
-│   │
-│   ├── migrations/           # Alembic
-│   ├── tests/                # тесты
-│   ├── .python-version
-│   ├── pyproject.toml
-│   ├── uv.lock
-│   ├── .dockerignore
-│   └── Dockerfile
 │
 ├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── api/              # запросы к backend
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── features/         # (если используешь feature-based подход)
-│   │   ├── hooks/
-│   │   ├── utils/
-│   │   └── main.(js|tsx)
-│   │
-│   ├── package.json
-│   ├── .dockerignore
-│   └── Dockerfile
 │
 ├── database/
 │   ├── init.sql             # начальная инициализация
 │   └── seeds/               # тестовые данные
 │
-├── notebooks/               # иследование
+├── notebooks/               # исследование
 │
-├── docker-compose.yml
-├── .env.example
 ├── .gitignore
+├── docker-compose.yml
 └── README.md
 ```
