@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from src.api.routers import user_auth
 from src.core import get_settings
 from src.db import create_db_and_tables
 
@@ -20,6 +21,8 @@ app = FastAPI(
     version=settings.PROJECT_VERSION,
     lifespan=lifespan,
 )
+
+app.include_router(user_auth)
 
 
 @app.get("/")
