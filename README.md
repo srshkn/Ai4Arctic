@@ -8,6 +8,21 @@ Ai4Arctic — web-сервис мониторинга вечной мерзло�
 
 ## Быстрый старт
 
+### 1
+```bash
+cd backend
+```
+
+### 2
+```bash
+cp .env.example .env
+```
+
+### 3
+```bash
+docker compose --env-file ./backend/.env up --build
+```
+
 ✍️
 
 ## Структура проекта

@@ -42,6 +42,8 @@ backend/
 │   │   └── users.py
 │   │
 │   ├── services/               # бизнес-логика
+│   │   ├── __init__.py
+│   │   └── services.py
 │   │
 │   ├── gis/                    # работа с GeoPandas и геоданными
 │   │
