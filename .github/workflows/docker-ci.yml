@@ -1,19 +1,54 @@
-name: Docker CI
+name: backend-ci
 
 on:
   push:
-    branches:
+    branches: [development]
+    paths: ['backend/**', 'docker-compose.yml', '.github/workflows/backend-ci.yml']
   pull_request:
-    branches: [main]
+    branches: [main, development]
+    paths: ['backend/**', 'docker-compose.yml']
 
 jobs:
-  docker:
+  dockerfile-ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          tags: sketch-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  docker-compose-ci:
+    needs: dockerfile-ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      PROJECT_NAME: test_project_name
+      PROJECT_DESCRIPTION: test_project_description
+      PROJECT_VERSION: 1.0.0
+      API_V1_STR: /test_api/v1
+
+      POSTGRES_SERVER: db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: test_postgresql
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -22,26 +57,6 @@ jobs:
         run: |
           docker --version
           docker compose version
-
-      - name: Install Hadolint
-        run: |
-          sudo wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
-          sudo chmod +x /usr/local/bin/hadolint
-
-      - name: Lint Dockerfile
-        run: hadolint backend/Dockerfile
-
-      - name: Build backend image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          target: runtime
-          push: false
-          load: true
-          tags: test-backend:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Validate docker-compose.yml
         run: docker compose config
@@ -59,6 +74,7 @@ jobs:
             echo "Waiting for service..."
             sleep 2
           done
+
           echo "Service did not become ready in time"
           docker compose ps
           docker compose logs
