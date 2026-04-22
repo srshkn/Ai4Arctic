@@ -1,8 +1,9 @@
 from functools import lru_cache
 
-from app.utils import BASE_DIR
 from pydantic import PostgresDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from src.utils import BASE_DIR
 
 
 class Settings(BaseSettings):
@@ -10,6 +11,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str
     PROJECT_DESCRIPTION: str
     PROJECT_VERSION: str
+    API_V1_STR: str
 
     # PostgreSQL
     POSTGRES_SERVER: str

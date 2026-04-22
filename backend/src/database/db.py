@@ -1,9 +1,10 @@
-from app.core import get_settings
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
+
+from src.core import get_settings
 
 from .base import Base
 
