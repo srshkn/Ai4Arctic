@@ -3,8 +3,6 @@ from functools import lru_cache
 from pydantic import PostgresDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from src.utils import BASE_DIR
-
 
 class Settings(BaseSettings):
     # App
@@ -29,7 +27,7 @@ class Settings(BaseSettings):
         )
 
     model_config = SettingsConfigDict(
-        env_file=BASE_DIR / ".env", case_sensitive=True, extra="ignore"
+        env_file=".env", case_sensitive=True, extra="ignore"
     )
 
 
