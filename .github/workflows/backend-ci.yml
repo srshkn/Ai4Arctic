@@ -2,15 +2,30 @@ name: backend-ci
 
 on:
   push:
-    branches: [backend]
-    paths: ['backend/**', 'docker-compose.yml', '.github/workflows/backend-ci.yml']
+    branches:
+      - backend
+    paths:
+      - 'backend/**'
+      - '!backend/BACKEND.md'
+      - '!backend/.env.example'
+      - 'docker-compose.yml'
+      - '.github/workflows/backend-ci.yml'
+
   pull_request:
-    branches: [main, backend]
-    paths: ['backend/**', 'docker-compose.yml']
+    branches:
+      - main
+      - backend
+    paths:
+      - 'backend/**'
+      - '!backend/BACKEND.md'
+      - 'docker-compose.yml'
 
 jobs:
-  tests:
+  tests-ci:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
 
     services:
       postgres:
@@ -58,7 +73,7 @@ jobs:
         run: uv run pytest -vv -s --maxfail=1
 
   dockerfile-ci:
-    needs: tests
+    needs: tests-ci
     runs-on: ubuntu-latest
 
     steps:
