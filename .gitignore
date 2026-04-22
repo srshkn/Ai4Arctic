@@ -1,15 +1,19 @@
-# Доп. приколы
+# === GENERAL ===
+# IDE
 .vscode/
 .cursor/
+.idea/
 
-# Конфиденциальность
+# macOS
+.DS_Store
+
+# === BACKEND ===
+# Env files
 .env
 
 # Python
-__pycache__/
+.pytest_cache
+.venv
+__pycache__
 *.py[cod]
-.venv/
-venv/
-
-# Для пользователей macOS
-.DS_Store
+.ruff_cache
