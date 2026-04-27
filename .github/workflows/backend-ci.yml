@@ -1,0 +1,163 @@
+name: backend-ci
+
+on:
+  push:
+    branches:
+      - backend
+    paths:
+      - 'backend/**'
+      - '!backend/BACKEND.md'
+      - '!backend/.env.example'
+      - 'docker-compose.yml'
+      - '.github/workflows/backend-ci.yml'
+
+  pull_request:
+    branches:
+      - main
+      - backend
+      - development
+    paths:
+      - 'backend/**'
+      - '!backend/BACKEND.md'
+      - 'docker-compose.yml'
+
+jobs:
+  tests-ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_postgresql
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d test_postgresql"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      PROJECT_NAME: test_sketch_backend_python
+      PROJECT_DESCRIPTION: test_project_description
+      PROJECT_VERSION: 1.0.0
+      API_V1_STR: /test_api/v1
+
+      POSTGRES_SERVER: 127.0.0.1
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: test_postgresql
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run tests
+        run: uv run pytest -vv -s --maxfail=1
+
+  dockerfile-ci:
+    needs: tests-ci
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          tags: sketch-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  docker-compose-ci:
+    needs: dockerfile-ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      PROJECT_NAME: test_project_name
+      PROJECT_DESCRIPTION: test_project_description
+      PROJECT_VERSION: 1.0.0
+      API_V1_STR: /test_api/v1
+
+      POSTGRES_SERVER: db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: test_postgresql
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Show Docker versions
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Validate docker-compose.yml
+        run: docker compose config
+
+      - name: Build and start containers
+        run: docker compose up --build -d
+
+      - name: Wait for app on localhost:8080
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:8080/docs > /dev/null; then
+              echo "Service is up"
+              exit 0
+            fi
+            echo "Waiting for service..."
+            sleep 2
+          done
+
+          echo "Service did not become ready in time"
+          docker compose ps
+          docker compose logs
+          exit 1
+
+      - name: Smoke test
+        run: |
+          curl -fsS http://localhost:8080/docs > /dev/null
+          curl -fsS http://localhost:8080/openapi.json > /dev/null
+
+      - name: Show container status
+        if: always()
+        run: docker compose ps
+
+      - name: Show logs
+        if: always()
+        run: docker compose logs --no-color
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down -v

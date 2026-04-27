@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Python
+.pytest_cache
+.venv
+__pycache__
+*.py[cod]
+.ruff_cache
+
+# IDE
+.vscode
+.cursor
+.idea
+
+# Env files
+.env
+.env.example
+
+# CI/CD
+.github
+
+# Tests
+tests
+
+# Docs
+README.md
+LICENSE
+
+# Docker
+Dockerfile
+docker-compose.yml
