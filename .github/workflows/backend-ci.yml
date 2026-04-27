@@ -15,6 +15,7 @@ on:
     branches:
       - main
       - backend
+      - development
     paths:
       - 'backend/**'
       - '!backend/BACKEND.md'
