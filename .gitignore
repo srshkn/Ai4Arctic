@@ -1,0 +1,19 @@
+# === GENERAL ===
+# IDE
+.vscode/
+.cursor/
+.idea/
+
+# macOS
+.DS_Store
+
+# === BACKEND ===
+# Env files
+.env
+
+# Python
+.pytest_cache
+.venv
+__pycache__
+*.py[cod]
+.ruff_cache
