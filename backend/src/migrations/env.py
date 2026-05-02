@@ -18,7 +18,6 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 config.set_main_option("sqlalchemy.url", settings.DB_URL + "?async_fallback=True")
-
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
@@ -55,6 +54,56 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+IGNORE_TABLES = {
+    "spatial_ref_sys",
+    "topology",
+    "geometry_columns",
+    "geography_columns",
+    "layer",
+    "zcta5",
+    "zip_lookup",
+    "state",
+    "addrfeat",
+    "edges",
+    "faces",
+    "loader_platform",
+    "cousub",
+    "county_lookup",
+    "loader_lookuptables",
+    "tabblock",
+    "addr",
+    "street_type_lookup",
+    "zip_lookup_all",
+    "direction_lookup",
+    "pagc_lex",
+    "secondary_unit_lookup",
+    "zip_state_loc",
+    "geocode_settings_default",
+    "geocode_settings",
+    "tract",
+    "featnames",
+    "loader_variables",
+    "pagc_gaz",
+    "bg",
+    "zip_lookup_base",
+    "countysub_lookup",
+    "tabblock20",
+    "county",
+    "zip_state",
+    "pagc_rules",
+    "state_lookup",
+    "place_lookup",
+    "place",
+}
+
+
+def include_object(object, name, type_, reflected, compare_to):
+    # Если это таблица и её имя есть в нашем черном списке - пропускаем (False)
+    if type_ == "table" and name in IGNORE_TABLES:
+        return False
+    return True
+
+
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
@@ -72,6 +121,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+            include_object=include_object,
             compare_server_default=True,
             compare_type=True,
         )
