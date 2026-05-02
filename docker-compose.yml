@@ -21,7 +21,6 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
@@ -51,7 +50,11 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
 
     ports:
-      - "8080:8000"
+      - "8080:8080"
+    
+    volumes:
+      - ./backend:/app
+      - /app/.venv
 
 volumes:
   postgres_data:
