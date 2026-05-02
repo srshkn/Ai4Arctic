@@ -1,3 +1,3 @@
-from .models import User
+from .models import NDVI, User
 
-__all__ = ["User"]
+__all__ = ["User", "NDVI"]

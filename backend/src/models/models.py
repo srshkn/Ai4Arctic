@@ -1,6 +1,8 @@
 import uuid
+from datetime import date
 
-from sqlalchemy import String
+from geoalchemy2 import Geometry
+from sqlalchemy import Date, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -18,3 +20,21 @@ class User(Base):
         String(75), nullable=False, unique=True, index=True
     )
     password_hash: Mapped[str] = mapped_column(String(255))
+
+
+# Таблица гео-данных NDVI
+class NDVI(Base):
+    __tablename__ = "ndvi"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    name: Mapped[str] = mapped_column(String(75), nullable=False)
+
+    year: Mapped[date] = mapped_column(Date, nullable=False)
+    ndvi: Mapped[float] = mapped_column(Numeric(7, 6), nullable=False)
+    ndwi_1: Mapped[float] = mapped_column(Numeric(7, 6), nullable=False)
+    ndwi_2: Mapped[float] = mapped_column(Numeric(7, 6), nullable=False)
+    savi: Mapped[float] = mapped_column(Numeric(7, 6), nullable=False)
+
+    geom = mapped_column(Geometry("POLYGON", srid=4326), nullable=False)
