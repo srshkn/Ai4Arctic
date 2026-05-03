@@ -3,6 +3,8 @@ from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
+from alembic import command
+from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from src.db import Base, get_session
@@ -17,17 +19,30 @@ TEST_DATABASE_URL = (
 )
 
 
-@pytest_asyncio.fixture(scope="session", loop_scope="session")
+@pytest.fixture(scope="session")
+def apply_migrations():
+    """Фикстура для применения миграций Alembic к тестовой БД."""
+    # Указываем путь к alembic.ini (убедись, что путь корректный относительно запуска pytest)
+    alembic_cfg = Config("alembic.ini")
+
+    # Переопределяем URL БД в конфиге Alembic, чтобы он смотрел в тестовую базу, а не в основную
+    alembic_cfg.set_main_option("sqlalchemy.url", TEST_DATABASE_URL)
+
+    # Накатываем миграции до актуального состояния
+    command.upgrade(alembic_cfg, "head")
+
+    yield
+
+    # После завершения всех тестов откатываем БД в ноль
+    command.downgrade(alembic_cfg, "base")
+
+
+@pytest_asyncio.fixture(scope="session")
 async def engine():
+    """Асинхронный движок зависит от фикстуры миграций."""
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
     yield engine
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
 
     await engine.dispose()
 
