@@ -4,14 +4,12 @@ from fastapi import FastAPI
 
 from src.api.routers import user_auth
 from src.core import get_settings
-from src.db import create_db_and_tables
 
 settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await create_db_and_tables()
     yield
 
 

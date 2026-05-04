@@ -32,6 +32,7 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
+    make \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/.venv /app/.venv
@@ -40,4 +41,4 @@ COPY --from=builder /app /app
 
 EXPOSE 8080
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["make", "run"]
