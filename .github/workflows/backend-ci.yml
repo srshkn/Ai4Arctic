@@ -69,12 +69,12 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --dev
-      
-      - name: Check for missing migrations
-        run: uv run alembic check
 
       - name: Run Alembic migrations
         run: uv run alembic upgrade head
+      
+      - name: Check for missing migrations
+        run: uv run alembic check
 
       - name: Run tests
         run: uv run pytest -vv -s --maxfail=1
