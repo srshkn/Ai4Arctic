@@ -19,6 +19,11 @@ TEST_DATABASE_URL = (
 )
 
 
+@pytest.fixture
+def fastapi_app():
+    return app
+
+
 @pytest.fixture(scope="session")
 def apply_migrations():
     """Фикстура для применения миграций Alembic к тестовой БД."""

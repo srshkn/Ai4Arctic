@@ -1,12 +1,14 @@
 from fastapi import status
 from httpx import AsyncClient
 
+from ..conftest import app
+
 
 async def test_register_user_success(async_client: AsyncClient, valid_user_data: dict):
     """
     Тест успешной регистрации пользователя (HTTP 201).
     """
-    url = async_client.url_path_for("auth_register")
+    url = app.url_path_for("auth_register")
 
     response = await async_client.post(url, json=valid_user_data)
 
@@ -26,7 +28,7 @@ async def test_register_user_already_exists(
     """
     Тест попытки регистрации с уже существующим именем пользователя (HTTP 400).
     """
-    url = async_client.url_path_for("auth_register")
+    url = app.url_path_for("auth_register")
     # 1. Успешно регистрируем пользователя
     first_response = await async_client.post(url, json=valid_user_data)
     assert first_response.status_code == status.HTTP_201_CREATED
@@ -44,7 +46,7 @@ async def test_register_user_validation_error(async_client: AsyncClient):
     """
     Тест обработки невалидных данных с помощью Pydantic (HTTP 422).
     """
-    url = async_client.url_path_for("auth_register")
+    url = app.url_path_for("auth_register")
     # Отправляем payload без обязательного поля password
     invalid_data = {"name": "test_user"}
 
