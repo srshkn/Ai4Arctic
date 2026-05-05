@@ -1,3 +1,6 @@
+# BACKEND
+
+## Структура
 ```
 backend/
 │
@@ -6,12 +9,19 @@ backend/
 │   ├── api/
 │   │   │
 │   │   ├── routers/           # endpoints
+│   │   │   ├── __init__..py
+│   │   │   └── auth.py
 │   │   │
 │   │   ├── __init__.py
-│   │   └── dependencies.py
+│   │   ├── constants.py
+│   │   ├── dependencies.py
+│   │   ├── router.py
+│   │   └── tags.py
 │   │
 │   ├── core/
 │   │   ├── __init__.py
+│   │   ├── exceptions.py
+│   │   ├── security.py
 │   │   └── settings.py
 │   │
 │   ├── db/                    # подключение к БД, сессии, миграции
@@ -24,7 +34,6 @@ backend/
 │   │   │
 │   │   ├── versions/
 │   │   │
-│   │   ├── __init__.py
 │   │   ├── env.py
 │   │   └── script.py.mako
 │   │
@@ -38,20 +47,23 @@ backend/
 │   │
 │   ├── schemas/                # Pydantic схемы
 │   │   ├── __init__.py
-│   │   ├── schemas.py
+│   │   ├── config.py
 │   │   └── users.py
 │   │
 │   ├── services/               # бизнес-логика
 │   │   ├── __init__.py
 │   │   └── services.py
 │   │
-│   ├── gis/                    # работа с GeoPandas и геоданными
-│   │
 │   ├── __init__.py
 │   └── main.py                 # точка входа FastAPI
 │
 ├── tests/                      # тесты
-│   └── conftest.py 
+│   │
+│   ├── test_endpoints/
+│   │   └── test_auth.py
+│   │
+│   ├── conftest.py
+│   └── test_mapper_config.py   
 │
 ├── .dockerignore
 ├── .env.example
@@ -59,6 +71,7 @@ backend/
 ├── alembic.ini
 ├── BACKEND.md
 ├── Dockerfile
+├── Makefile
 ├── pyproject.toml
 └── uv.lock
 ```
