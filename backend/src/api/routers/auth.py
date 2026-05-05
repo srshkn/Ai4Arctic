@@ -17,6 +17,7 @@ router = APIRouter(prefix="/auth", tags=[Tags.AUTH])
     response_model=UserOut,
     summary="Регистрация пользователя",
     description="Тут пользователь регистрируется.",
+    name="auth_register",
 )
 async def register(data: UserCreate, db: DBManagerDep) -> UserOut:
     service = UserService(db)
