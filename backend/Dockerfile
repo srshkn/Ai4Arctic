@@ -18,7 +18,7 @@ COPY pyproject.toml uv.lock ./
 
 RUN uv sync --frozen --no-dev --no-install-project
 
-COPY src ./src
+COPY . .
 
 
 FROM python:3.12-slim AS runtime
@@ -32,12 +32,13 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
+    make \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/.venv /app/.venv
 
-COPY --from=builder /app/src /app/src
+COPY --from=builder /app /app
 
-EXPOSE 8000
+EXPOSE 8080
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["make", "run"]

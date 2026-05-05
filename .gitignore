@@ -7,6 +7,9 @@
 # macOS
 .DS_Store
 
+# Experiments
+experiments/
+
 # === BACKEND ===
 # Env files
 .env

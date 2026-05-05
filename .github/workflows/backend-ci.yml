@@ -30,7 +30,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:17
+        image: postgis/postgis:16-3.4
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -47,7 +47,6 @@ jobs:
       PROJECT_NAME: test_sketch_backend_python
       PROJECT_DESCRIPTION: test_project_description
       PROJECT_VERSION: 1.0.0
-      API_V1_STR: /test_api/v1
 
       POSTGRES_SERVER: 127.0.0.1
       POSTGRES_USER: postgres
@@ -69,6 +68,12 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --dev
+
+      - name: Run Alembic migrations
+        run: uv run alembic upgrade head
+      
+      - name: Check for missing migrations
+        run: uv run alembic check
 
       - name: Run tests
         run: uv run pytest -vv -s --maxfail=1
@@ -103,7 +108,6 @@ jobs:
       PROJECT_NAME: test_project_name
       PROJECT_DESCRIPTION: test_project_description
       PROJECT_VERSION: 1.0.0
-      API_V1_STR: /test_api/v1
 
       POSTGRES_SERVER: db
       POSTGRES_USER: postgres

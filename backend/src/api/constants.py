@@ -1,0 +1,4 @@
+API_PREFIX = "/api"
+V1_PREFIX = "/v1"
+
+API_V1_PREFIX = f"{API_PREFIX}{V1_PREFIX}"

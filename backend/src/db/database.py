@@ -8,8 +8,6 @@ from sqlalchemy.ext.asyncio import (
 
 from src.core import get_settings
 
-from .base import Base
-
 
 def build_engine(db_url: str | None = None):
     if db_url is None:
@@ -25,11 +23,6 @@ SessionLocal = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
-
-
-async def create_db_and_tables():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
