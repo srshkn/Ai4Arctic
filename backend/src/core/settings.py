@@ -9,7 +9,6 @@ class Settings(BaseSettings):
     PROJECT_NAME: str
     PROJECT_DESCRIPTION: str
     PROJECT_VERSION: str
-    API_V1_STR: str
 
     # PostgreSQL
     POSTGRES_SERVER: str
