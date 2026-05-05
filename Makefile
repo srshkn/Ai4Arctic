@@ -1,14 +1,24 @@
 # Ai4Arctic/Makefile
 
-.PHONY: up down clean help
+.PHONY: help env up down clean
+
+ENV_FILE=backend/.env
+ENV_EXAMPLE=backend/.env.example
 
 help:
 	@echo "Usage:"
+	@echo "  make env"
 	@echo "  make up"
 	@echo "  make down"
 	@echo "  make clean"
 
-up:
+env:
+	@if [ ! -f $(ENV_FILE) ]; then \
+		echo "Creating .env from .env.example"; \
+		cp $(ENV_EXAMPLE) $(ENV_FILE); \
+	fi
+
+up: env
 	docker compose --env-file ./backend/.env up --build
 
 down:
