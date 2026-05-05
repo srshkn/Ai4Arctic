@@ -1,7 +1,6 @@
 from fastapi import status
 from httpx import AsyncClient
-
-from ..conftest import app
+from src.main import app
 
 
 async def test_register_user_success(async_client: AsyncClient, valid_user_data: dict):
