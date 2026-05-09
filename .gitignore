@@ -11,8 +11,9 @@
 experiments/
 
 # === BACKEND ===
-# Env files
+# Security
 .env
+*.pem
 
 # Python
 .pytest_cache

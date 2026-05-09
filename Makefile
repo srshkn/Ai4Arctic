@@ -26,3 +26,4 @@ down:
 
 clean:
 	docker compose down -v
+	docker builder prune -af

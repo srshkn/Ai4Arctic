@@ -13,6 +13,8 @@ dependencies = [
     "passlib[argon2]>=1.7.4",
     "psycopg2-binary>=2.9.12",
     "pydantic-settings>=2.13.1",
+    "pyjwt[crypto]>=2.12.1",
+    "redis>=7.4.0",
     "sqlmodel>=0.0.38",
     "uvicorn>=0.44.0",
 ]

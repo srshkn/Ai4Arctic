@@ -83,6 +83,12 @@ http://localhost:8080
 ```
 http://localhost:8080/docs
 ```
+
+**ReDoc**
+```
+http://localhost:8080/redoc
+```
+
 **pgAdmin**
 ```
 http://localhost:5050

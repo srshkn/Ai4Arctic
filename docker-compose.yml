@@ -53,6 +53,7 @@ services:
     
     volumes:
       - ./backend:/app
+      - ./backend/certs:/app/certs:ro
       - /app/.venv
 
 volumes:
