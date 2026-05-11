@@ -105,10 +105,14 @@ Ai4Arctic/
 │
 ├── frontend/
 │
+├── infra/                   # инфраструктура
+│   ├── composes/
+│   └── nginx/
+│
 ├── notebooks/               # исследование
 │
 ├── .gitignore
-├── docker-compose.yml
+├── compose.yml
 ├── Makefile
 └── README.md
 ```

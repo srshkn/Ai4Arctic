@@ -1,5 +1,5 @@
-version: "3.9"
-
+networks:
+  app:
 
 services:
   db:
@@ -18,16 +18,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-
-  pgadmin:
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
-    ports:
-      - "5050:80"
-    depends_on:
-      - db
+    networks:
+      - app
 
   backend:
     build:
@@ -47,14 +39,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_PORT: ${POSTGRES_PORT}
       POSTGRES_DB: ${POSTGRES_DB}
-
-    ports:
-      - "8080:8080"
-    
-    volumes:
-      - ./backend:/app
-      - ./backend/certs:/app/certs:ro
-      - /app/.venv
+    networks:
+      - app
 
 volumes:
   postgres_data:
