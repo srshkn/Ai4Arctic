@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api import Tags, api_v1_router, tags_metadata
+from src.api import Tags, all_router, tags_metadata
 from src.core import get_settings
 
 settings = get_settings()
@@ -31,7 +31,7 @@ app.add_middleware(
 )
 
 
-app.include_router(api_v1_router)
+app.include_router(all_router)
 
 
 @app.get(
