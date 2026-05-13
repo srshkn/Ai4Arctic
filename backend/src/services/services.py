@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from src.core import TokenHelper, get_security, get_settings
 from src.core.exceptions import (
+    EmailAlreadyExistsError,
     InvalidCredentialsError,
     RefreshTokenExpiredError,
     RefreshTokenNotFoundError,
@@ -22,12 +23,17 @@ class UserService:
     def __init__(self, db: DBManager):
         self.db = db
 
-    async def register(self, name: str, password: str):
-        existing = await self.db.users.get_user_name(name)
-        if existing:
+    async def register(self, name: str, email: str, password: str):
+        existing_name = await self.db.users.get_user_name(name)
+        existing_email = await self.db.users.get_user_email(email)
+        if existing_name:
             raise UserAlreadyExistsError
+        elif existing_email:
+            raise EmailAlreadyExistsError
         user = await self.db.users.create_user(
-            name=name, password_hash=security.hash_password(password=password)
+            name=name,
+            email=email,
+            password_hash=security.hash_password(password=password),
         )
         await self.db.session.commit()
         return user

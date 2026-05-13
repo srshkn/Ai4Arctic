@@ -14,6 +14,10 @@ class UserAlreadyExistsError(AppError):
     """Пользователь уже существует."""
 
 
+class EmailAlreadyExistsError(AppError):
+    """Пользователь c такой почтой уже существует."""
+
+
 class UserNotFoundError(AppError):
     """Пользователь не найден."""
 

@@ -16,11 +16,14 @@ class UserRepository:
     async def get_user_name(self, name: str) -> Optional[User]:
         return await self.session.scalar(select(User).where(User.name == name))
 
+    async def get_user_email(self, email: str) -> Optional[User]:
+        return await self.session.scalar(select(User).where(User.email == email))
+
     async def get_user_id(self, user_id: int) -> Optional[User]:
         return await self.session.get(User, user_id)
 
-    async def create_user(self, name: str, password_hash: str) -> User:
-        user = User(name=name, password_hash=password_hash)
+    async def create_user(self, name: str, email: str, password_hash: str) -> User:
+        user = User(name=name, email=email, password_hash=password_hash)
         self.session.add(user)
         await self.session.flush()
         return user

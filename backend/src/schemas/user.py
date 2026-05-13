@@ -1,13 +1,21 @@
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import EmailStr, Field, model_validator
 
 from .config import APIModel
 
 
 class UserCreate(APIModel):
     name: str = Field(min_length=5, max_length=20)
-    password: str = Field(min_length=5, max_length=75)
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+    confirm_password: str = Field(min_length=8, max_length=128)
+
+    @model_validator(mode="after")
+    def check_passwords_match(self) -> "UserCreate":
+        if self.password != self.confirm_password:
+            raise ValueError("Пароли не совпадают")
+        return self
 
 
 class UserOut(APIModel):

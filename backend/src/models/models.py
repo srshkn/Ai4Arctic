@@ -3,7 +3,7 @@ from datetime import date, datetime
 
 from geoalchemy2 import Geometry
 from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Numeric, String, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import CITEXT, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db import Base
@@ -17,7 +17,13 @@ class User(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     name: Mapped[str] = mapped_column(
-        String(75), nullable=False, unique=True, index=True
+        String(20), nullable=False, unique=True, index=True
+    )
+    email: Mapped[str] = mapped_column(
+        CITEXT,
+        unique=True,
+        nullable=True,
+        index=True,
     )
     password_hash: Mapped[str] = mapped_column(String(255))
 
