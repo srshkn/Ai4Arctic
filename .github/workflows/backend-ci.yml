@@ -8,6 +8,7 @@ on:
       - 'backend/**'
       - '!backend/BACKEND.md'
       - '!backend/.env.example'
+      - '!backend/Makefile'
       - 'docker-compose.yml'
       - '.github/workflows/backend-ci.yml'
 
