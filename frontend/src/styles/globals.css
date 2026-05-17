@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* MapLibre GL overrides */
+.maplibregl-control-container {
+  z-index: 10;
+}
+
+.maplibregl-popup-content {
+  @apply rounded-lg bg-arctic-dark p-3 text-sm shadow-xl;
+  border: 1px solid rgba(79, 195, 247, 0.2);
+}
+
+.maplibreggl-popup-tip::before {
+  border-top-color: #0a1628;
+}
+
+.maplibregl-ctrl-group {
+  @apply rounded-lg bg-arctic-dark/90 shadow-lg backdrop-blur-sm;
+  border: 1px solid rgba(79, 195, 247, 0.1);
+}
+
+.maplibregl-ctrl-group button {
+  @apply text-gray-300 hover:text-white;
+}
+
+.maplibregl-ctrl-group button:hover {
+  @apply bg-arctic-light/50;
+}
+
+/* Custom range slider styles */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  @apply rounded-full bg-arctic-light;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  @apply bg-arctic-accent cursor-pointer;
+  box-shadow: 0 0 6px rgba(79, 195, 247, 0.5);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  @apply bg-arctic-accent cursor-pointer border-0;
+  box-shadow: 0 0 6px rgba(79, 195, 247, 0.5);
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  border: 3px solid rgba(79, 195, 247, 0.2);
+  border-top-color: #4fc3f7;
+  border-radius: 50%;
+}
+
+/* Fade transition for map layers */
+.fade-enter {
+  opacity: 0;
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 300ms ease-in-out;
+}
+
+.fade-exit {
+  opacity: 1;
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 300ms ease-in-out;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-arctic-dark;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-arctic-light;
+}
+
+/* Form input focus styles */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.4);
+}
+
+/* Map container full screen */
+#map-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
