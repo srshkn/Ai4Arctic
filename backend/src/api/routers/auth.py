@@ -1,6 +1,9 @@
-from fastapi import APIRouter, HTTPException, Response, status
+from typing import Annotated
 
-from src.api import DBManagerDep
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.security import OAuth2PasswordRequestForm
+
+from src.api import DBManagerDep, get_current_user
 from src.core import get_settings
 from src.core.exceptions import (
     AppError,
@@ -10,7 +13,8 @@ from src.core.exceptions import (
     UserAlreadyExistsError,
     UserNotFoundError,
 )
-from src.schemas import LoginRequest, RefreshRequest, TokenPair, UserCreate, UserOut
+from src.models import User
+from src.schemas import RefreshRequest, TokenPair, UserCreate, UserOut
 from src.services import AuthService, UserService
 
 from ..tags import Tags
@@ -71,16 +75,23 @@ async def register(data: UserCreate, db: DBManagerDep) -> UserOut:
 # Аутентификация
 @router.post(
     "/login",
-    status_code=status.HTTP_201_CREATED,
-    response_model=TokenPair,
+    status_code=status.HTTP_200_OK,
+    # response_model=TokenPair,
     summary="Аутентификация пользователя",
     description="Тут пользователь входит в сервис, будучи зарегистрированным.",
     name="auth_login",
 )
-async def login(data: LoginRequest, response: Response, db: DBManagerDep) -> TokenPair:
+async def login(
+    data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    response: Response,
+    db: DBManagerDep,
+):
+    # -> TokenPair:
     jwt_service = AuthService(db)
     try:
-        access_token, refresh_token = await jwt_service.login(data.name, data.password)
+        access_token, refresh_token = await jwt_service.login(
+            data.username, data.password
+        )
     except InvalidCredentialsError as err:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail=str(err)) from err
     except AppError as err:
@@ -92,7 +103,14 @@ async def login(data: LoginRequest, response: Response, db: DBManagerDep) -> Tok
     )
 
 
-@router.post("/token/refresh", summary="Обновление access/refresh токенов")
+@router.post(
+    "/token/refresh",
+    status_code=status.HTTP_200_OK,
+    response_model=TokenPair,
+    summary="Обновление access/refresh токенов",
+    description="Endpoint для обновления JWT токенов.",
+    name="auth_refresh",
+)
 async def refresh_tokens(
     data: RefreshRequest, response: Response, db: DBManagerDep
 ) -> TokenPair:
@@ -109,3 +127,17 @@ async def refresh_tokens(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(err)) from err
     _set_token_cookies(response, pair.access_token, pair.refresh_token)
     return pair
+
+
+@router.get(
+    "/me",
+    summary="Профиль по JWT (access)",
+    status_code=status.HTTP_200_OK,
+    response_model=UserOut,
+    description="Вернуть данные по пользователю.",
+    name="auth_me",
+)
+async def me_jwt(
+    request: Request, user: Annotated[User, Depends(get_current_user)]
+) -> UserOut:
+    return user

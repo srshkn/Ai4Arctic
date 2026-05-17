@@ -3,7 +3,7 @@
 # Устанавливает цель по умолчанию
 .DEFAULT_GOAL := help
 
-.PHONY: help env jwt-keys dev local prod down clean
+.PHONY: help env jwt-keys dev local prod down clean rev
 
 # Docker
 COMPOSE=docker compose
@@ -47,6 +47,12 @@ jwt-keys:
 		openssl rsa -in $(PRIVATE_KEY) -pubout -out $(PUBLIC_KEY); \
 		echo "JWT keys generated in backend/certs"; \
 	fi
+
+rev:
+	$(COMPOSE) --env-file ./$(ENV_FILE) \
+		$(BASE) \
+		-f infra/compose/dev.yml \
+		up
 
 # Запускает проект в dev-режиме
 dev: env jwt-keys

@@ -1,6 +1,12 @@
 from functools import lru_cache
 
+from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
+
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/v1/auth/login",
+    auto_error=False,
+)
 
 
 class Security:
