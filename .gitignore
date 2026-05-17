@@ -21,3 +21,5 @@ experiments/
 __pycache__
 *.py[cod]
 .ruff_cache
+# === FRONTEND ===
+node_modules/
