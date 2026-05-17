@@ -83,6 +83,12 @@ http://localhost:8080
 ```
 http://localhost:8080/docs
 ```
+
+**ReDoc**
+```
+http://localhost:8080/redoc
+```
+
 **pgAdmin**
 ```
 http://localhost:5050
@@ -99,10 +105,14 @@ Ai4Arctic/
 │
 ├── frontend/
 │
+├── infra/                   # инфраструктура
+│   ├── composes/
+│   └── nginx/
+│
 ├── notebooks/               # исследование
 │
 ├── .gitignore
-├── docker-compose.yml
+├── compose.yml
 ├── Makefile
 └── README.md
 ```

@@ -1,0 +1,17 @@
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - "./infra/nginx/nginx.conf:/etc/nginx/nginx.conf"
+    depends_on:
+      - backend
+    networks:
+      - app
+  
+  backend:
+    volumes:
+      - ./backend:/app
+      - ./backend/certs:/app/certs:ro
+      - /app/.venv

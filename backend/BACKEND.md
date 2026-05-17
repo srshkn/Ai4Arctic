@@ -4,6 +4,8 @@
 ```
 backend/
 │
+├── certs/                     #ключи JWT
+│
 ├── src/
 │   │
 │   ├── api/

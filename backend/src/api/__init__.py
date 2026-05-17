@@ -1,5 +1,12 @@
-from .dependencies import DBManagerDep, SessionDep
-from .router import api_v1_router
+from .dependencies import DBManagerDep, SessionDep, get_current_user
+from .router import all_router
 from .tags import Tags, tags_metadata
 
-__all__ = ["SessionDep", "DBManagerDep", "Tags", "tags_metadata", "api_v1_router"]
+__all__ = [
+    "SessionDep",
+    "DBManagerDep",
+    "Tags",
+    "tags_metadata",
+    "all_router",
+    "get_current_user",
+]

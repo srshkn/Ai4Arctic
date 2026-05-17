@@ -1,6 +1,7 @@
 # Git
 .git
 .gitignore
+.gitkeep
 
 # Python
 .pytest_cache
@@ -24,8 +25,11 @@ __pycache__
 # Tests
 tests
 
+#Security
+*.pem
+
 # Docs
-README.md
+*.md
 LICENSE
 
 # Docker

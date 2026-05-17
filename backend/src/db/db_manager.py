@@ -2,7 +2,7 @@ from typing import Callable
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.repositories import UserRepository
+from src.repositories import AuthRepository, UserRepository
 
 from .database import SessionLocal
 
@@ -12,10 +12,12 @@ class DBManager:
         self.session_factory = session_factory
         self.session: AsyncSession | None = None
         self.users: UserRepository | None = None
+        self.auth: AuthRepository | None = None
 
     async def __aenter__(self) -> "DBManager":
         self.session = self.session_factory()
         self.users = UserRepository(self.session)
+        self.auth = AuthRepository(self.session)
         return self
 
     async def __aexit__(self, *args) -> None:
