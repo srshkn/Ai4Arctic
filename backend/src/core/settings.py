@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     PRIVATE_KEY: str | None = None
     PUBLIC_KEY: str | None = None
 
+    # Frontend
+    FRONTEND_URL: str
+
     @computed_field
     @property
     def DB_URL(self) -> PostgresDsn:
