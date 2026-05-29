@@ -11,7 +11,7 @@ from src.core import get_settings
 
 def build_engine(db_url: str | None = None):
     if db_url is None:
-        db_url = get_settings().DB_URL
+        db_url = str(get_settings().ASYNC_DB_URL)
     return create_async_engine(db_url, echo=True)
 
 
