@@ -106,8 +106,8 @@ jobs:
       - name: Create JWT keys
         run: |
           mkdir -p certs
-          echo "${{ secrets.JWT_PRIVATE_KEY }}" > backend/certs/private.pem
-          echo "${{ secrets.JWT_PUBLIC_KEY }}" > backend/certs/public.pem
+          echo "${{ secrets.JWT_PRIVATE_KEY }}" > certs/private.pem
+          echo "${{ secrets.JWT_PUBLIC_KEY }}" > certs/public.pem
 
       - name: Install dependencies
         run: uv sync --dev
