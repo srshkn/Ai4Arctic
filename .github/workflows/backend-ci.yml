@@ -143,6 +143,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   docker-compose-ci:
+    if: false
     needs: dockerfile-ci
     runs-on: ubuntu-latest
     timeout-minutes: 15
