@@ -6,6 +6,13 @@ backend/
 │
 ├── certs/                     #ключи JWT
 │
+├── migrations/                # миграции (Alembic)
+│   │
+│   ├── versions/
+│   │
+│   ├── env.py
+│   └── script.py.mako
+│
 ├── src/
 │   │
 │   ├── api/
@@ -31,13 +38,6 @@ backend/
 │   │   ├── base.py
 │   │   ├── database.py
 │   │   └── db_manager.py
-│   │
-│   ├── migrations/            # миграции (Alembic)
-│   │   │
-│   │   ├── versions/
-│   │   │
-│   │   ├── env.py
-│   │   └── script.py.mako
 │   │
 │   ├── models/                # ORM модели (SQLAlchemy)
 │   │   ├── __init__.py
@@ -71,8 +71,8 @@ backend/
 ├── .env.example
 ├── .python-version
 ├── alembic.ini
-├── BACKEND.md
 ├── Dockerfile
+├── Dockerfile.dev
 ├── Makefile
 ├── pyproject.toml
 └── uv.lock

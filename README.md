@@ -105,6 +105,8 @@ Ai4Arctic/
 │
 ├── frontend/
 │
+├── docs/
+│
 ├── infra/                   # инфраструктура
 │   ├── composes/
 │   └── nginx/
