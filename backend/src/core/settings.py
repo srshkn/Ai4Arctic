@@ -1,50 +1,62 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import PostgresDsn, computed_field
+from pydantic import Field, PostgresDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     # App
-    PROJECT_NAME: str
-    PROJECT_DESCRIPTION: str
-    PROJECT_VERSION: str
+    PROJECT_NAME: str = Field(default=...)
+    PROJECT_DESCRIPTION: str = Field(default=...)
+    PROJECT_VERSION: str = Field(default=...)
 
     # PostgreSQL
-    POSTGRES_SERVER: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_PORT: int
-    POSTGRES_DB: str
+    POSTGRES_SERVER: str = Field(default=...)
+    POSTGRES_USER: str = Field(default=...)
+    POSTGRES_PASSWORD: str = Field(default=...)
+    POSTGRES_PORT: int = Field(default=...)
+    POSTGRES_DB: str = Field(default=...)
 
     # JWT
-    JWT_PRIVATE_KEY_PATH: str
-    JWT_PUBLIC_KEY_PATH: str
-    JWT_ALGORITHM: str
+    JWT_PRIVATE_KEY_PATH: str = Field(default=...)
+    JWT_PUBLIC_KEY_PATH: str = Field(default=...)
+    JWT_ALGORITHM: str = Field(default=...)
 
-    ACCESS_TOKEN_EXPIRES_MINUTES: int
-    REFRESH_TOKEN_EXPIRES_MINUTES: int
+    ACCESS_TOKEN_EXPIRES_MINUTES: int = Field(default=...)
+    REFRESH_TOKEN_EXPIRES_MINUTES: int = Field(default=...)
 
-    ACCESS_COOKIE_NAME: str
-    REFRESH_COOKIE_NAME: str
+    ACCESS_COOKIE_NAME: str = Field(default=...)
+    REFRESH_COOKIE_NAME: str = Field(default=...)
 
-    SESSION_COOKIE_SECURE: bool
-    SESSION_COOKIE_DOMAIN: str | None = None
-    JWT_ISSUER: str
-    JWT_AUDIENCE: str
+    SESSION_COOKIE_SECURE: bool = Field(default=...)
+    SESSION_COOKIE_DOMAIN: str | None = Field(default=None)
 
-    PRIVATE_KEY: str | None = None
-    PUBLIC_KEY: str | None = None
+    JWT_ISSUER: str = Field(default=...)
+    JWT_AUDIENCE: str = Field(default=...)
+
+    PRIVATE_KEY: str = Field(default="")
+    PUBLIC_KEY: str = Field(default="")
 
     # Frontend
-    FRONTEND_URL: str
+    FRONTEND_URL: str = Field(default=...)
+
+    # Testcontainer
+    TESTCONTAINER: bool = Field(default=...)
 
     @computed_field
     @property
-    def DB_URL(self) -> PostgresDsn:
-        return (
+    def ASYNC_DB_URL(self) -> PostgresDsn:
+        return PostgresDsn(
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+            f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
+
+    @computed_field
+    @property
+    def SYNC_DB_URL(self) -> PostgresDsn:
+        return PostgresDsn(
+            f"postgresql+psycopg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
