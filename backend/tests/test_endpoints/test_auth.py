@@ -1,5 +1,6 @@
 from fastapi import status
 from httpx import AsyncClient
+
 from src.main import app
 
 
@@ -41,19 +42,28 @@ async def test_register_user_already_exists(
     assert second_response.json()["detail"] == ""
 
 
-async def test_register_user_validation_error(async_client: AsyncClient):
+async def test_register_user_validation_error(
+    async_client: AsyncClient, valid_user_data: dict
+):
     """
     Тест обработки невалидных данных с помощью Pydantic (HTTP 422).
     """
     url = app.url_path_for("auth_register")
-    # Отправляем payload без обязательного поля password
-    invalid_data = {"name": "test_user"}
+
+    # Копируем валидные данные и удаляем только то поле, которое хотим проверить
+    invalid_data = valid_user_data.copy()
+    invalid_data.pop("password")
 
     response = await async_client.post(url, json=invalid_data)
 
-    # FastAPI перехватывает ошибку валидации Pydantic и отдает 422 до вызова тела функции
+    # FastAPI перехватывает ошибку валидации Pydantic и отдает 422
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     errors = response.json()["detail"]
-    assert errors[0]["loc"] == ["body", "password"]
-    assert errors[0]["msg"] == "Field required"
+
+    # Ищем ошибку именно для поля 'password'
+    # Используем цикл, так как Pydantic может вернуть список ошибок в разном порядке
+    password_error = next(err for err in errors if err["loc"] == ["body", "password"])
+
+    assert password_error["loc"] == ["body", "password"]
+    assert "field required" in password_error["msg"].lower()

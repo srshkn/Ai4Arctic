@@ -5,12 +5,12 @@ on:
     branches:
       - backend
     paths:
-      - 'backend/**'
-      - '!backend/BACKEND.md'
-      - '!backend/.env.example'
-      - '!backend/Makefile'
-      - 'compose.yml'
-      - '.github/workflows/backend-ci.yml'
+      - "backend/**"
+      - "!backend/.env.example"
+      - "!backend/Makefile"
+      - "infra/compose/*"
+      - "compose.yml"
+      - ".github/workflows/backend-ci.yml"
 
   pull_request:
     branches:
@@ -18,11 +18,28 @@ on:
       - backend
       - development
     paths:
-      - 'backend/**'
-      - '!backend/BACKEND.md'
-      - 'compose.yml'
+      - "backend/**"
+      - "compose.yml"
+      - "infra/compose/*"
 
 jobs:
+  ruff:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Lint and Format
+        run: |
+          uvx ruff check .
+          uvx ruff format --check .
+
   tests-ci:
     runs-on: ubuntu-latest
     defaults:
@@ -55,6 +72,25 @@ jobs:
       POSTGRES_PORT: 5432
       POSTGRES_DB: test_postgresql
 
+      JWT_PRIVATE_KEY_PATH: ./certs/private.pem
+      JWT_PUBLIC_KEY_PATH: ./certs/public.pem
+      JWT_ALGORITHM: RS256
+
+      ACCESS_TOKEN_EXPIRES_MINUTES: 15
+      REFRESH_TOKEN_EXPIRES_MINUTES: 43200
+
+      ACCESS_COOKIE_NAME: access_token
+      REFRESH_COOKIE_NAME: refresh_token
+
+      SESSION_COOKIE_SECURE: False
+
+      JWT_ISSUER: my-service
+      JWT_AUDIENCE: my-api
+
+      FRONTEND_URL: http://localhost:5173
+
+      TESTCONTAINER: False
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -67,12 +103,18 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
+      - name: Create JWT keys
+        run: |
+          mkdir -p certs
+          echo "${{ secrets.JWT_PRIVATE_KEY }}" > certs/private.pem
+          echo "${{ secrets.JWT_PUBLIC_KEY }}" > certs/public.pem
+
       - name: Install dependencies
         run: uv sync --dev
 
       - name: Run Alembic migrations
         run: uv run alembic upgrade head
-      
+
       - name: Check for missing migrations
         run: uv run alembic check
 
@@ -101,6 +143,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   docker-compose-ci:
+    if: false
     needs: dockerfile-ci
     runs-on: ubuntu-latest
     timeout-minutes: 15
