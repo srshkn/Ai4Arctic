@@ -3,3 +3,9 @@ ml/data/
 *.nc
 *.zip
 *.ovr
+
+# macOS
+.DS_Store
+
+# scripts (если не нужны в repo)
+migrate_repo.sh
