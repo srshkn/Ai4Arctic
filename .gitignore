@@ -1,0 +1,92 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb-checkpoint
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Большие данные (не пушим в git)
+data/*.npz
+data/*.tif
+data/*.nc
+data/*.geojson
+data/raw/
+data/processed/
+
+# Исключения — небольшие данные ВКЛЮЧАЕМ в репо
+!results/maps/FINAL_maps.npz
+!results/maps/ALT_2023.npz
+!results/maps/bonus_results.npz
+!results/maps/uncertainty_mc_dropout.npz
+!data/boreholes/*.csv
+
+# Локальные временные файлы
+*.tmp
+*.log
+*.bak
+
+# Тестовые/исследовательские ноутбуки
+notebooks/draft_*.ipynb
+notebooks/test_*.ipynb
+notebooks/_*.ipynb
+
+# Чекпоинты во время обучения (не финальные)
+models/checkpoints/
+models/*_epoch_*.pt
+models/_BACKUP_*
+
+# Резервные копии
+*~
+.*.swp
+
+
+# Большие данные (генерируются скриптами)
+data/gee/
+data/esa_cci/
+data/tensor_*.npz
+data/y_new_rk_landcover_extended*.npz
+data/esa_cci_target_*.npz
+
+# Archive — research history вне репо
+archive/
+
+# Большие интерактивные HTML
+results/figures/p2_interactive_*.html
+
+# Бекапы
+*.backup
+.Rhistory
+ 
+# Приватные файлы (не для публичного репо)
+CHECKLIST.md
+LICENSE
+SETUP_LOCAL_COLAB.md
+MASTER_PLAN.md
+scripts/cleanup_repo.py
+scripts/dedupe_p2_yearly_maps.py
+.Rhistory

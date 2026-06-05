@@ -1,0 +1,12 @@
+{
+  "comparison": "TTOP+P1(shift) model (2023) vs ESA CCI T2m (2021)",
+  "n_pixels": 204675,
+  "bias_c": -1.831,
+  "rmse_c": 2.915,
+  "mae_c": 2.375,
+  "pearson_r": 0.8789,
+  "r_squared": 0.772,
+  "min_pred": -11.36,
+  "p1_strategy": "pure_shift (slope=1.0, intercept=+1.985)",
+  "note": "Pure shift preserves dynamic range while removing bias"
+}
