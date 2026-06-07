@@ -72,9 +72,6 @@ data/tensor_*.npz
 data/y_new_rk_landcover_extended*.npz
 data/esa_cci_target_*.npz
 
-# Archive — research history вне репо
-archive/
-
 # Большие интерактивные HTML
 results/figures/p2_interactive_*.html
 
