@@ -40,6 +40,7 @@ results.append(test("src.metrics", imp('metrics', ['all_metrics'])))
 results.append(test("src.landcover", imp('landcover', ['classify_landcover'])))
 results.append(test("src.bias_correction", imp('bias_correction', ['compare_strategies'])))
 results.append(test("src.ablation", imp('ablation', ['FEATURE_NAMES'])))
+results.append(test("src.reproducibility", imp('reproducibility', ['set_global_seed', 'DEFAULT_SEED'])))
 results.append(test("src.data_extended", imp('data_extended', ['make_sliding_windows'])))
 results.append(test("src.esa_cci", imp('esa_cci', ['build_esa_target_tensor'])))
 

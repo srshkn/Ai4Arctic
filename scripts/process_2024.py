@@ -36,7 +36,7 @@ sys.path.insert(0, str(BASE_DIR))
 from src.model import ConvLSTMNet
 from src.data import normalize_features
 from src.inference import predict_full_map
-from src.ablation import features_by_names
+from src.ablation import features_by_names, features_from_checkpoint
 from src.landcover import compute_ttop_target
 
 DATA_DIR = BASE_DIR / 'data'
@@ -198,12 +198,12 @@ def step4_inference_2024(X_22, y_22, years_22, lats, lons):
     # Модель
     ckpt = torch.load(MODELS_DIR / 'convlstm_ttop_extended_21years.pt',
                        map_location=device, weights_only=False)
-    model = ConvLSTMNet(in_ch=6).to(device)
+    feat_names = features_from_checkpoint(ckpt)
+    core_idx = features_by_names(feat_names)
+    model = ConvLSTMNet(in_ch=len(feat_names)).to(device)
     model.load_state_dict(ckpt['state_dict'])
     model.eval()
 
-    CORE_6 = ['MAAT', 'LST_winter', 'TDD', 'LST_annual', 'FDD', 'era5_temp']
-    core_idx = features_by_names(CORE_6)
     X_core = X_22[..., core_idx]
 
     # Нормализация по train years (как в P2: range(19) для 21-year tensor)

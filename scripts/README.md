@@ -56,7 +56,7 @@ jupyter notebook notebooks/
 6. `07_feature_ablation.ipynb` — P4: ablation 7 конфигураций (~15 мин на MPS)
 
 **Артефакты после Сценария A:**
-- `models/convlstm_ttop_rk_v2_climate_core_6.pt` — P4 winner
+- `models/convlstm_ttop_rk_v2_<winner>.pt` — P4 winner (лучший val RMSE из ablation)
 - `results/maps/MAGT_2023_bias_corrected.npz` — финальная карта
 - `results/metrics/bias_correction_summary.csv` — P1 метрики
 - `results/metrics/ablation_table.csv` — P4 метрики

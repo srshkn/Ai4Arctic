@@ -29,7 +29,7 @@ sys.path.insert(0, str(BASE_DIR))
 from src.model import ConvLSTMNet
 from src.data import normalize_features
 from src.inference import predict_full_map
-from src.ablation import features_by_names
+from src.ablation import features_by_names, features_from_checkpoint
 
 P1_SHIFT = 1.985
 INFERENCE_YEARS = list(range(2007, 2024))  # 17 годов (input_window=4 → first usable = 2007)
@@ -59,14 +59,15 @@ def main():
 
     y_ext = np.load(DATA_DIR / 'y_new_rk_landcover_extended.npz')['y_new']
 
-    CORE_6 = ['MAAT', 'LST_winter', 'TDD', 'LST_annual', 'FDD', 'era5_temp']
-    core_idx = features_by_names(CORE_6)
-    X_core = X_ext[..., core_idx]
-
     # Модель P2
     ckpt = torch.load(MODELS_DIR / 'convlstm_ttop_extended_21years.pt',
                        map_location=device, weights_only=False)
-    model = ConvLSTMNet(in_ch=6).to(device)
+    feat_names = features_from_checkpoint(ckpt)
+    core_idx = features_by_names(feat_names)
+    X_core = X_ext[..., core_idx]
+    print(f"Features из чекпоинта ({len(feat_names)}): {feat_names}")
+
+    model = ConvLSTMNet(in_ch=len(feat_names)).to(device)
     model.load_state_dict(ckpt['state_dict'])
     model.eval()
     print(f"Загружена модель P2 (val RMSE = {ckpt.get('val_rmse', '?'):.3f}°C)")

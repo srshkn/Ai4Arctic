@@ -2,7 +2,8 @@
 P2: переобучение ConvLSTM на расширенном тензоре 2003-2023 (21 год).
 
 Использует тот же ConvLSTM v2 что и в P4 winner модели, с тем же
-набором фичей climate_core_6 (6 температурных признаков). Расширение
+набором фичей, что выбран в P4 ablation (results/metrics/ablation_table.csv).
+Расширение
 от 14 лет (2010-2023) до 21 года (2003-2023) даёт +50% обучающих данных.
 
 Train/Val split:
@@ -29,12 +30,14 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-from src.ablation import train_one_config, features_by_names
+from src.ablation import train_one_config, features_by_names, load_ablation_winner
 from src.model import ConvLSTMNet
+from src.reproducibility import DEFAULT_SEED
 
 
 # --- Конфигурация ---
-CORE_6 = ['MAAT', 'LST_winter', 'TDD', 'LST_annual', 'FDD', 'era5_temp']
+METRICS_DIR = BASE_DIR / 'results' / 'metrics'
+ABLATION_TABLE = METRICS_DIR / 'ablation_table.csv'
 
 # Years индексы: 2003=0, 2004=1, ..., 2023=20
 # Input window для ConvLSTM = 4 года → первые 4 года уходят в input
@@ -46,6 +49,7 @@ EPOCHS = 80
 LR = 1e-4
 BATCH_SIZE = 8
 EARLY_STOP_PATIENCE = 20    # увеличено с 15 для большей стабильности
+SEED = DEFAULT_SEED
 
 DATA_DIR = BASE_DIR / 'data'
 MODELS_DIR = BASE_DIR / 'models'
@@ -79,8 +83,13 @@ def main():
     print(f"Train target years: {[years_ext[i] for i in TRAIN_TARGETS]}")
     print(f"Val target years:   {[years_ext[i] for i in VAL_TARGETS]}")
 
-    core_idx = features_by_names(CORE_6)
-    print(f"\nFeatures (climate_core_6): {CORE_6}")
+    if not ABLATION_TABLE.exists():
+        raise FileNotFoundError(
+            f"Нет {ABLATION_TABLE}. Сначала запустите notebooks/07_feature_ablation.ipynb."
+        )
+    winner_name, winner_feats = load_ablation_winner(ABLATION_TABLE)
+    core_idx = features_by_names(winner_feats)
+    print(f"\nFeatures (P4 winner: {winner_name}): {winner_feats}")
     print(f"Indices: {core_idx}\n")
 
     print(f"Тренировка: lr={LR}, batch={BATCH_SIZE}, epochs={EPOCHS}, patience={EARLY_STOP_PATIENCE}\n")
@@ -96,6 +105,7 @@ def main():
         batch_size=BATCH_SIZE,
         device=device,
         early_stop_patience=EARLY_STOP_PATIENCE,
+        seed=SEED,
     )
 
     print(f"\n=== Финальная модель P2 (21 год) ===")
@@ -106,14 +116,16 @@ def main():
 
     torch.save({
         'state_dict': result['model_state'],
-        'feature_names': CORE_6,
+        'feature_names': winner_feats,
+        'feature_group': winner_name,
+        'seed': SEED,
         'feature_indices': core_idx,
         'val_rmse': result['val_rmse'],
         'y_mean': result['y_mean'],
         'y_std': result['y_std'],
         'best_epoch': result['best_epoch'],
         'description': 'ConvLSTM trained on EXTENDED 2003-2023 tensor (P2), '
-                       'climate_core_6, TTOP target with landcover-varying rk, '
+                       f'{winner_name}, TTOP target with landcover-varying rk, '
                        'train=2007..2021, val=2022-2023',
         'train_years': [years_ext[i] for i in TRAIN_TARGETS],
         'val_years': [years_ext[i] for i in VAL_TARGETS],

@@ -5,8 +5,8 @@ Feature ablation: проверка, нужны ли все 20 признаков
     1. Определяем 5-7 наборов фичей разного размера/состава
     2. Обучаем ConvLSTM на каждом наборе с урезанным бюджетом (30 эпох, ES)
     3. Сравниваем RMSE/R²/Pearson на одном и том же validation
-    4. Выбираем «маленькую» конфигурацию в пределах +0.2°C от baseline
-    5. Финальную модель переобучаем на полном бюджете эпох
+    4. Выбираем конфигурацию с лучшим mean val RMSE (pick_ablation_winner)
+    5. Финальную модель переобучаем на полном бюджете эпох (тот же seed)
 
 Названия фичей и их индексы должны соответствовать каналам в тензоре.
 Адаптируй FEATURE_NAMES под свой actual tensor (порядок каналов).
@@ -36,6 +36,8 @@ import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader
+
+from src.reproducibility import DEFAULT_SEED, set_global_seed, train_generator
 
 
 # ---------------------------------------------------------------------------
@@ -108,6 +110,17 @@ FEATURE_GROUPS: Dict[str, List[str]] = {
     'no_terrain_17': [n for n in FEATURE_NAMES if n not in ['elevation', 'slope', 'aspect']],
 }
 
+# Финалисты для углублённой проверки (head-to-head, несколько seed)
+FINALIST_GROUP_NAMES: tuple[str, ...] = ('climate_core_6', 'climate_soil_9')
+
+
+def get_feature_groups(names: Sequence[str]) -> Dict[str, List[str]]:
+    """Поднабор конфигураций из FEATURE_GROUPS по именам."""
+    missing = [n for n in names if n not in FEATURE_GROUPS]
+    if missing:
+        raise KeyError(f"Неизвестные группы: {missing}. Доступные: {list(FEATURE_GROUPS)}")
+    return {n: list(FEATURE_GROUPS[n]) for n in names}
+
 
 # ---------------------------------------------------------------------------
 # Утилиты тензора
@@ -167,6 +180,8 @@ def train_one_config(
     input_len: int = 4,
     tile: int = 64,
     step: int = 32,
+    seed: int = DEFAULT_SEED,
+    deterministic: bool = True,
 ) -> Dict:
     """
     Обучает одну конфигурацию ablation.
@@ -178,12 +193,15 @@ def train_one_config(
         train_targets, val_targets: индексы целевых лет для train/val
         epochs, lr, batch_size, early_stop_patience, input_len, tile, step:
             гиперпараметры обучения
+        seed: фиксированный seed (инициализация весов + порядок батчей)
+        deterministic: максимально детерминированный режим PyTorch
 
     Returns:
         dict с метриками и историей
     """
-    from torch.utils.data import DataLoader, TensorDataset
     from src.data import normalize_features, make_pairs, TileDataset
+
+    set_global_seed(seed, device=device, deterministic=deterministic)
 
     # 1. Подвыборка каналов из сырого тензора по последней оси F
     X_sub = X_raw[..., feature_indices]
@@ -205,10 +223,19 @@ def train_one_config(
     if verbose:
         print(f"    Train pairs: {Xtr.shape[0]}, Val pairs: {Xv.shape[0]}")
 
-    train_loader = DataLoader(TileDataset(Xtr, ytr, mtr),
-                              batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(TileDataset(Xv, yv, mv),
-                            batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(
+        TileDataset(Xtr, ytr, mtr),
+        batch_size=batch_size,
+        shuffle=True,
+        generator=train_generator(seed),
+        num_workers=0,
+    )
+    val_loader = DataLoader(
+        TileDataset(Xv, yv, mv),
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=0,
+    )
 
     # 4. Модель + обучение
     model = model_class(in_ch=n_features).to(device)
@@ -283,6 +310,7 @@ def train_one_config(
         'model_state': best_state,
         'y_mean': y_mean,
         'y_std': y_std,
+        'seed': seed,
     }
 
 
@@ -296,6 +324,9 @@ def run_ablation_study(
     epochs: int = 30,
     device: str = 'cuda',
     save_dir: Optional[Path] = None,
+    seed: int = DEFAULT_SEED,
+    n_repeats: int = 1,
+    deterministic: bool = True,
 ) -> pd.DataFrame:
     """
     Запускает ablation по всем конфигурациям, возвращает DataFrame с метриками.
@@ -308,6 +339,9 @@ def run_ablation_study(
         train_targets, val_targets: индексы лет (по умолчанию train=[4..12], val=[13])
         epochs: бюджет на конфигурацию (для ablation хватает 30)
         save_dir: куда сохранять чекпоинты (если не None)
+        seed: базовый seed; повтор r использует seed + r
+        n_repeats: число независимых прогонов на конфигурацию (усреднение RMSE)
+        deterministic: детерминированный режим PyTorch
     """
     if feature_groups is None:
         feature_groups = FEATURE_GROUPS
@@ -317,48 +351,101 @@ def run_ablation_study(
     if val_targets is None:
         val_targets = [13]                  # 2023
 
+    if n_repeats < 1:
+        raise ValueError('n_repeats must be >= 1')
+
     rows = []
     for name, feat_names in feature_groups.items():
         print(f"\n{'='*60}\nКонфигурация: {name} ({len(feat_names)} фичей)")
         feat_idx = features_by_names(feat_names)
 
-        result = train_one_config(
-            model_class=model_class,
-            X_raw=X_raw,
-            y_raw=y_raw,
-            feature_indices=feat_idx,
-            train_targets=train_targets,
-            val_targets=val_targets,
-            epochs=epochs,
-            device=device,
-        )
+        repeat_results = []
+        for repeat in range(n_repeats):
+            run_seed = seed + repeat
+            if n_repeats > 1:
+                print(f"  --- Повтор {repeat + 1}/{n_repeats} (seed={run_seed}) ---")
+            result = train_one_config(
+                model_class=model_class,
+                X_raw=X_raw,
+                y_raw=y_raw,
+                feature_indices=feat_idx,
+                train_targets=train_targets,
+                val_targets=val_targets,
+                epochs=epochs,
+                device=device,
+                seed=run_seed,
+                deterministic=deterministic,
+            )
+            repeat_results.append(result)
+            if n_repeats > 1:
+                print(f"      val_rmse={result['val_rmse']:.3f}°C, "
+                      f"best_epoch={result['best_epoch']}")
+
+        rmse_runs = [r['val_rmse'] for r in repeat_results]
+        best_result = min(repeat_results, key=lambda r: r['val_rmse'])
+        rmse_mean = float(np.mean(rmse_runs))
+        rmse_std = float(np.std(rmse_runs, ddof=1)) if len(rmse_runs) > 1 else 0.0
+        total_time = sum(r['train_time_sec'] for r in repeat_results)
 
         rows.append({
             'group': name,
             'n_features': len(feat_names),
             'features': ','.join(feat_names),
-            'val_rmse_c': result['val_rmse'],
-            'best_epoch': result['best_epoch'],
-            'train_time_min': result['train_time_sec'] / 60,
+            'val_rmse_c': rmse_mean,
+            'val_rmse_std': rmse_std,
+            'n_repeats': n_repeats,
+            'seed_base': seed,
+            'best_epoch': best_result['best_epoch'],
+            'train_time_min': total_time / 60,
         })
 
         if save_dir is not None:
             save_dir = Path(save_dir)
             save_dir.mkdir(parents=True, exist_ok=True)
             torch.save({
-                'state_dict': result['model_state'],
+                'state_dict': best_result['model_state'],
                 'feature_names': feat_names,
                 'feature_indices': feat_idx,
-                'val_rmse_c': result['val_rmse'],
-                'y_mean': result['y_mean'],
-                'y_std': result['y_std'],
+                'val_rmse_c': best_result['val_rmse'],
+                'val_rmse_mean': rmse_mean,
+                'val_rmse_std': rmse_std,
+                'n_repeats': n_repeats,
+                'seed_base': seed,
+                'y_mean': best_result['y_mean'],
+                'y_std': best_result['y_std'],
             }, save_dir / f'ablation_{name}.pt')
 
-        print(f"  ИТОГ: val_rmse={result['val_rmse']:.3f}°C, "
-              f"best_epoch={result['best_epoch']}, "
-              f"time={result['train_time_sec']/60:.1f} мин")
+        std_note = f" ± {rmse_std:.3f}" if n_repeats > 1 else ''
+        print(f"  ИТОГ: val_rmse={rmse_mean:.3f}{std_note}°C, "
+              f"best_epoch={best_result['best_epoch']}, "
+              f"time={total_time/60:.1f} мин")
 
     return pd.DataFrame(rows).sort_values('val_rmse_c').reset_index(drop=True)
+
+
+def run_finalist_ablation(
+    X_raw: np.ndarray,
+    y_raw: np.ndarray,
+    model_class,
+    group_names: Sequence[str] = FINALIST_GROUP_NAMES,
+    n_repeats: int = 3,
+    **kwargs,
+) -> pd.DataFrame:
+    """
+    Head-to-head ablation для узкого списка финалистов (по умолчанию 6 vs 9 фичей).
+
+    Удобно после быстрого скрининга всех 7 конфигураций (n_repeats=1):
+    уточняем только топ-кандидатов с несколькими повторами.
+    """
+    return run_ablation_study(
+        X_raw=X_raw,
+        y_raw=y_raw,
+        model_class=model_class,
+        feature_groups=get_feature_groups(group_names),
+        n_repeats=n_repeats,
+        **kwargs,
+    )
+
 
 # ---------------------------------------------------------------------------
 # Выбор победителя
@@ -366,21 +453,78 @@ def run_ablation_study(
 
 def pick_ablation_winner(results_df: pd.DataFrame,
                          tolerance: float = 0.2,
-                         prefer_fewer: bool = True) -> str:
+                         prefer_fewer: bool = False) -> str:
     """
-    Выбирает конфигурацию по правилу:
-        - если RMSE в пределах tolerance °C от лучшей — берём с меньшим числом фичей
-        - иначе — лучшую по RMSE
+    Выбирает конфигурацию ablation.
 
-    Это защита от защиты «вы переоверфитили, специально подобрав мало фичей».
+    По умолчанию (prefer_fewer=False): лучшая по val_rmse_c.
+    При prefer_fewer=True: среди конфигураций в пределах tolerance °C от лучшей
+    RMSE выбирается набор с меньшим числом фичей (rule of parsimony).
     """
-    best_rmse = results_df['val_rmse_c'].min()
-    candidates = results_df[results_df['val_rmse_c'] <= best_rmse + tolerance]
     if prefer_fewer:
-        winner = candidates.sort_values('n_features').iloc[0]
+        best_rmse = results_df['val_rmse_c'].min()
+        candidates = results_df[results_df['val_rmse_c'] <= best_rmse + tolerance]
+        winner = candidates.sort_values(['n_features', 'val_rmse_c']).iloc[0]
     else:
-        winner = candidates.sort_values('val_rmse_c').iloc[0]
+        winner = results_df.sort_values('val_rmse_c').iloc[0]
     return winner['group']
+
+
+def winner_features(results_df: pd.DataFrame, **kwargs) -> tuple[str, List[str]]:
+    """Имя группы-победителя и список признаков из FEATURE_GROUPS."""
+    name = pick_ablation_winner(results_df, **kwargs)
+    return name, list(FEATURE_GROUPS[name])
+
+
+def load_ablation_winner(metrics_path: Path, **kwargs) -> tuple[str, List[str]]:
+    """Читает ablation_table.csv и возвращает победителя по val RMSE."""
+    return winner_features(pd.read_csv(metrics_path), **kwargs)
+
+
+def p4_model_path(winner_group: str, models_dir: Path) -> Path:
+    return models_dir / f'convlstm_ttop_rk_v2_{winner_group}.pt'
+
+
+def resolve_p4_checkpoint(
+    models_dir: Path,
+    metrics_path: Optional[Path] = None,
+) -> tuple[Path, str, List[str]]:
+    """
+    Путь к финальной P4-модели, имя группы и список признаков.
+
+    Сначала смотрит ablation_table.csv; если файла модели нет — берёт самый
+    свежий convlstm_ttop_rk_v2_*.pt и читает feature_names из чекпоинта.
+    """
+    models_dir = Path(models_dir)
+    if metrics_path is not None and Path(metrics_path).exists():
+        name, feats = load_ablation_winner(metrics_path)
+        path = p4_model_path(name, models_dir)
+        if path.exists():
+            return path, name, feats
+
+    candidates = sorted(
+        models_dir.glob('convlstm_ttop_rk_v2_*.pt'),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    if not candidates:
+        raise FileNotFoundError(
+            f"Не найдена P4-модель в {models_dir}. "
+            "Сначала запустите notebooks/07_feature_ablation.ipynb."
+        )
+    path = candidates[0]
+    ckpt = torch.load(path, map_location='cpu', weights_only=False)
+    feats = features_from_checkpoint(ckpt)
+    name = path.stem.removeprefix('convlstm_ttop_rk_v2_')
+    return path, name, feats
+
+
+def features_from_checkpoint(ckpt: dict) -> List[str]:
+    """Список имён признаков из сохранённого чекпоинта модели."""
+    names = ckpt.get('feature_names')
+    if not names:
+        raise KeyError("В чекпоинте нет ключа 'feature_names'")
+    return list(names)
 
 
 # ---------------------------------------------------------------------------
@@ -393,19 +537,31 @@ def plot_ablation_results(results_df: pd.DataFrame, save_path: Optional[Path] = 
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
+    has_std = 'val_rmse_std' in results_df.columns
+    xerr = results_df['val_rmse_std'].values if has_std else None
+
     # Panel 1: RMSE per configuration
     axes[0].barh(results_df['group'], results_df['val_rmse_c'],
+                 xerr=xerr,
                  color=['green' if i == 0 else 'steelblue'
-                        for i in range(len(results_df))])
+                        for i in range(len(results_df))],
+                 capsize=3 if has_std else 0)
     axes[0].set_xlabel('Validation RMSE, °C')
-    axes[0].set_title('RMSE по конфигурациям (отсортировано)')
+    title = 'RMSE по конфигурациям (отсортировано)'
+    if has_std and results_df['n_repeats'].iloc[0] > 1:
+        title += f", mean ± std over {int(results_df['n_repeats'].iloc[0])} runs"
+    axes[0].set_title(title)
     axes[0].invert_yaxis()
-    for i, (rmse, n) in enumerate(zip(results_df['val_rmse_c'], results_df['n_features'])):
-        axes[0].text(rmse + 0.01, i, f'{rmse:.3f} ({n}f)', va='center')
+    for i, (_, row) in enumerate(results_df.iterrows()):
+        label = f"{row['val_rmse_c']:.3f} ({int(row['n_features'])}f)"
+        if has_std and row.get('val_rmse_std', 0) > 0:
+            label = f"{row['val_rmse_c']:.3f}±{row['val_rmse_std']:.3f} ({int(row['n_features'])}f)"
+        axes[0].text(row['val_rmse_c'] + 0.01, i, label, va='center')
 
     # Panel 2: RMSE vs # features (scatter)
-    axes[1].scatter(results_df['n_features'], results_df['val_rmse_c'],
-                    s=100, alpha=0.7, edgecolor='k')
+    axes[1].errorbar(results_df['n_features'], results_df['val_rmse_c'],
+                     yerr=xerr if has_std else None,
+                     fmt='o', ms=8, alpha=0.7, capsize=3, linestyle='none')
     for _, row in results_df.iterrows():
         axes[1].annotate(row['group'],
                          (row['n_features'], row['val_rmse_c']),

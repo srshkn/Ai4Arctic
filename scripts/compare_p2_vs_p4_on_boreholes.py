@@ -7,7 +7,7 @@
 3. Сравнивает с бурениями (magt_adjusted)
 
 Вход:
-  models/convlstm_ttop_rk_v2_climate_core_6.pt        (P4)
+  models/convlstm_ttop_rk_v2_<winner>.pt              (P4, из ablation_table.csv)
   models/convlstm_ttop_extended_21years.pt            (P2)
   data/tensor_01deg_extended.npz                       (X для inference)
   data/y_new_rk_landcover_extended.npz                 (target для нормализации)
@@ -31,7 +31,7 @@ sys.path.insert(0, str(BASE_DIR))
 from src.model import ConvLSTMNet
 from src.data import normalize_features
 from src.inference import predict_full_map
-from src.ablation import features_by_names
+from src.ablation import features_by_names, features_from_checkpoint, resolve_p4_checkpoint
 
 DATA_DIR = BASE_DIR / 'data'
 MODELS_DIR = BASE_DIR / 'models'
@@ -63,13 +63,6 @@ def main():
     X_p4 = X_ext[p4_years_idx]
     y_p4 = y_ext[p4_years_idx]
 
-    # Берём 6 фичей climate_core_6
-    CORE_6 = ['MAAT', 'LST_winter', 'TDD', 'LST_annual', 'FDD', 'era5_temp']
-    core_idx = features_by_names(CORE_6)
-
-    X_p4_core = X_p4[..., core_idx]
-    X_ext_core = X_ext[..., core_idx]
-
     # Бурения
     boreholes = pd.read_csv(DATA_DIR / 'boreholes' / 'clean_boreholes_33.csv')
     obs = boreholes['magt_adjusted'].values
@@ -79,9 +72,14 @@ def main():
 
     # ===== P4 (14 лет, как было раньше) =====
     print("\n=== P4 (14 лет, 2010-2023) ===")
-    ckpt_p4 = torch.load(MODELS_DIR / 'convlstm_ttop_rk_v2_climate_core_6.pt',
-                          map_location=device, weights_only=False)
-    model_p4 = ConvLSTMNet(in_ch=6).to(device)
+    p4_path, p4_group, p4_feats = resolve_p4_checkpoint(
+        MODELS_DIR, METRICS_DIR / 'ablation_table.csv'
+    )
+    print(f"  Модель: {p4_path.name} ({p4_group}, {len(p4_feats)} фичей)")
+    ckpt_p4 = torch.load(p4_path, map_location=device, weights_only=False)
+    p4_idx = features_by_names(p4_feats)
+    X_p4_core = X_p4[..., p4_idx]
+    model_p4 = ConvLSTMNet(in_ch=len(p4_feats)).to(device)
     model_p4.load_state_dict(ckpt_p4['state_dict'])
     model_p4.eval()
 
@@ -110,7 +108,11 @@ def main():
     print("\n=== P2 (21 год, 2003-2023) ===")
     ckpt_p2 = torch.load(MODELS_DIR / 'convlstm_ttop_extended_21years.pt',
                           map_location=device, weights_only=False)
-    model_p2 = ConvLSTMNet(in_ch=6).to(device)
+    p2_feats = features_from_checkpoint(ckpt_p2)
+    p2_idx = features_by_names(p2_feats)
+    X_ext_core = X_ext[..., p2_idx]
+    print(f"  Features: {p2_feats}")
+    model_p2 = ConvLSTMNet(in_ch=len(p2_feats)).to(device)
     model_p2.load_state_dict(ckpt_p2['state_dict'])
     model_p2.eval()
 

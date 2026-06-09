@@ -10,7 +10,7 @@ import json
 import time
 
 FEAT_DIR = Path("data/gee")
-YEARS = list(range(2003, 2024))  # 2003..2023 (21 год)
+YEARS = list(range(2003, 2025))  # 2003..2024 (22 года)
 BANDS = ["band0", "band1_west", "band1_east", "band2"]
 
 
