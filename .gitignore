@@ -87,3 +87,4 @@ MASTER_PLAN.md
 scripts/cleanup_repo.py
 scripts/dedupe_p2_yearly_maps.py
 .Rhistory
+data/gee.zip
