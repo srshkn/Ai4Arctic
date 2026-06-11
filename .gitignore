@@ -99,7 +99,3 @@ results/figures/*.html
 !data/y_new_rk_landcover.npz
 !data/maps_lh_v3.npz
 !data/obu_2019_reprojected.npz
-!data/y_new_rk_landcover_extended_23y.npz
-!data/tensor_01deg_extended_23y.npz 
-!data/y_new_rk_landcover_extended_23y.npz
-!data/tensor_01deg_extended_23y.npz
