@@ -1,58 +1,12 @@
 ## Кратко
 
-- **Архитектура:** ConvLSTM v2 — стек ConvLSTM-ячеек + регрессионная голова
-- **Цель обучения:** TTOP (температура на верхней границе мерзлоты) с поправкой на латентное тепло → MAGT
-- **Признаки:** до 20 каналов (LST, температуры воздуха, осадки, индексы вегетации, снежный покров, почвенные параметры)
-- **Сетка:** 0.1° lat × 0.1° lon, территория России 30-180°E × 55-78°N
-- **Валидация:** Obu 2019, ESA CCI Permafrost, in-situ бурения (33 точки)
+ConvLSTM-модель для карт **MAGT** (температура верхней границы мерзлоты) по России
+(30–180°E, 55–78°N, сетка 0.1°).
 
-## Метрики модели
-
-| Метрика            | v2 baseline | v3 (после bias correction) |
-| ------------------ | ----------- | -------------------------- |
-| RMSE vs Obu 2019   | 2.07 °C     | будет                      |
-| RMSE vs 33 бурения | ~2.0 °C     | будет                      |
-| Pearson r          | 0.943       | будет                      |
-| R²                 | 0.97        | будет                      |
-| MC Dropout σ       | 0.22 °C     | будет                      |
-
-## Структура репозитория
-
-```
-Ai4Arctic/
-├── README.md                Этот файл
-├── requirements.txt         Python зависимости
-├── .gitignore               Исключает большие данные и временные файлы
-├── src/                     Переиспользуемые модули
-│   ├── model.py             ConvLSTM (нужно перенести из старой работы)
-│   ├── data.py              Dataset, нормализация
-│   ├── inference.py         Inference utils + latent heat correction
-│   ├── metrics.py           RMSE, R², per-zone метрики
-│   ├── landcover.py         rk(landcover), ΔT, ALT через Стефана
-│   ├── bias_correction.py   ⭐ P1: калибровка по бурениям
-│   ├── ablation.py          ⭐ P4: feature ablation
-│   ├── data_extended.py     ⭐ P2: sliding windows 2001-2020
-│   └── esa_cci.py           ⭐ P3: загрузка ESA CCI target
-├── scripts/                 Подготовка данных и батч-задачи
-│   ├── compute_ttop_target.py    Расчёт TTOP target (старый)
-│   ├── rasterize_to_tensor.py    Сборка тензора из GeoJSON тайлов
-│   ├── gee_export_2000_2020.py   ⭐ P2: GEE экспорт за 20 лет
-│   └── download_esa_cci.py       ⭐ P3: скачивание ESA CCI с CEDA
-├── notebooks/               Запускаемые ноутбуки
-│   ├── 01_data_preparation.ipynb  Подготовка данных
-│   ├── 02_train_model.ipynb       Обучение v2
-│   ├── 03_inference.ipynb         Inference + LH correction
-│   ├── 04_validation.ipynb        Валидация на Obu/ESA/бурениях
-│   ├── 05_bias_correction.ipynb   ⭐ P1
-│   ├── 06_train_extended.ipynb    ⭐ P2
-│   ├── 07_feature_ablation.ipynb  ⭐ P4
-│   └── 08_esa_cci_training.ipynb  ⭐ P3
-└── data/
-    ├── README.md                  Описание данных
-    └── external_links.md          Ссылки на большие файлы (Drive/Zenodo)
-```
-
-⭐ = новые компоненты v3 для исправлений руководителя.
+- **Архитектура:** ConvLSTM + регрессионная голова (6 climate_core признаков в финальной модели)
+- **Target:** TTOP с `rk(landcover)` → MAGT с поправкой на латентное тепло и bias correction
+- **Данные:** 23 года признаков (2003–2025), прогноз 2026–2035
+- **Валидация:** Obu 2019, ESA CCI, 33 GTN-P бура
 
 ## Быстрый старт
 
@@ -60,23 +14,77 @@ Ai4Arctic/
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate   # на Mac/Linux
-# или: .venv\Scripts\activate на Windows
-
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Данные
+### 2. Проверка окружения
 
-Большие файлы (тензор ~200 МБ, Obu TIFF ~1.8 ГБ, ESA CCI ~1 ГБ) **не входят** в репозиторий. Скачать по ссылкам в [data/external_links.md](data/external_links.md) и положить в `data/`.
-
-### 3. Запуск
-
-В Colab или локально открой ноутбуки по порядку:
-
-```
-01 → 02 → 03 → 04          # v2 baseline (если ещё не обучено)
-05 → 07 → 06 → 08          # v3 upgrade (P1, P4, P2, P3)
+```bash
+python3 scripts/smoke_test.py
 ```
 
-Все ноутбуки автодетектят Colab vs локальный запуск — первая ячейка определяет `BASE_DIR`.
+### 3. Запуск pipeline v3
+
+**Полная инструкция:** [PIPELINE.md](PIPELINE.md) — 8 этапов от GEE export до графиков.
+
+Минимальный путь (если данные и модели уже в репозитории):
+
+```bash
+python3 scripts/projection_2026_2035.py
+python3 scripts/plot_delta_vs_baseline.py
+```
+
+Полный путь с нуля:
+
+```bash
+earthengine authenticate
+python3 scripts/gee_export.py --years 2003-2025 --project YOUR_GCP_PROJECT
+# скачать выгрузку в data/gee/
+
+python3 scripts/merge_bands.py --years 2003-2025
+python3 scripts/rasterize_extended.py
+python3 scripts/rasterize_2025.py
+python3 scripts/compute_target_23y.py
+python3 scripts/train_p3_model_A_ensemble.py
+python3 scripts/train_p3_model_B_ensemble.py
+python3 scripts/projection_2026_2035.py
+```
+
+## Структура репозитория
+
+```
+Ai4Arctic/
+├── PIPELINE.md              # ⭐ Главная инструкция v3 (этапы 1–8)
+├── README.md                # Этот файл
+├── requirements.txt
+├── src/                     # Модули: model, data, landcover, ablation, …
+├── scripts/                 # Воспроизводимый pipeline (GEE → прогноз 2035)
+├── notebooks/               # Baseline v2 (2010–2023): обучение, валидация, ablation
+├── models/                  # Чекпоинты ConvLSTM (P2, P3, ablation)
+├── data/                    # Данные (малые в git, большие — см. external_links)
+├── results/                 # Карты, метрики, фигуры
+├── docs/                    # Архитектура, воспроизведение v2
+└── archive/                 # История исследований (не использовать для v3)
+```
+
+## Данные
+
+| Категория | Файлы | Где описано |
+|-----------|-------|-------------|
+| Статические (в git) | `y_new_rk_landcover.npz`, `maps_lh_v3.npz`, … | [data/README.md](data/README.md) |
+| Генерируются pipeline | `tensor_01deg_extended_23y.npz`, target 23y | [PIPELINE.md](PIPELINE.md) |
+| Скачивание / GEE | большие тензоры, эталоны | [data/external_links.md](data/external_links.md) |
+
+## Два пути в проекте
+
+| Путь | Для чего | Точка входа |
+|------|----------|-------------|
+| **v3 scripts** | Прогноз 2026–2035, защита | [PIPELINE.md](PIPELINE.md) |
+| **v2 notebooks** | Baseline 2010–2023, ablation, валидация | [notebooks/README.md](notebooks/README.md) |
+
+## Дополнительно
+
+- Скрипты (детали): [scripts/README.md](scripts/README.md)
+- Архитектура модели: [docs/model_architecture.md](docs/model_architecture.md)
+- Модели и метрики: [models/README.md](models/README.md)

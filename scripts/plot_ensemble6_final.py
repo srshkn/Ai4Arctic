@@ -11,8 +11,9 @@
 4. p3_ensemble6_interactive_2007_2035.html — интерактивный slider до 2035
 
 Вход:
-    results/maps/p2_yearly_maps.npz (real 2007-2024)
-    results/maps/p2_real_2025.npz (real 2025)
+    results/maps/p2_yearly_maps.npz (real 2007-2024)  ← inference_p2_yearly_maps.py
+    results/maps/p2_real_2025.npz (real 2025)        ← inference_p2_2025.py
+    (или оба сразу: inference_p2_history.py)
     models/convlstm_ttop_p3_model_A_seed_{42,123,7,99,777,2024}.pt (6 моделей)
     data/tensor_01deg_synthetic_2026_2035.npz
 """

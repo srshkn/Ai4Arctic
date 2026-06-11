@@ -1,15 +1,17 @@
 """
-Растеризация 21 годового geojson → X-тензор формы (21, 231, 1501, 20).
+Растеризация 22 годовых geojson → X-тензор формы (22, 231, 1501, 20).
 
-БЕЗ target! Target пересчитаем отдельно через src.landcover.compute_ttop_target.
+БЕЗ target! Target пересчитаем отдельно через compute_target_23y.py.
 
-Вход:  data/gee/RussiaGrid_0.1deg_v2_<year>.geojson  (21 годовой файл)
-Выход: data/tensor_01deg_extended.npz с ключами:
-       - X (21, 231, 1501, 20)
+Вход:  data/gee/RussiaGrid_0.1deg_v2_<year>.geojson  (22 файла, 2003–2024)
+Выход: data/tensor_01deg_extended_22y.npz с ключами:
+       - X (22, 231, 1501, 20)
        - lons (1501,)
        - lats (231,)
-       - years (21,)
+       - years (22,)
        - feature_names (20,)
+
+Следующий шаг: scripts/rasterize_2025.py → tensor_01deg_extended_23y.npz
 """
 
 from pathlib import Path
@@ -18,12 +20,12 @@ import numpy as np
 import time
 
 DATA_DIR = Path("data/gee")
-OUT_FILE = Path("data/tensor_01deg_extended.npz")
+OUT_FILE = Path("data/tensor_01deg_extended_22y.npz")
 
 STEP = 0.1
 LON_MIN, LON_MAX = 30.0, 180.0
 LAT_MIN, LAT_MAX = 55.0, 78.0
-YEARS = list(range(2003, 2024))  # 21 год
+YEARS = list(range(2003, 2025))  # 2003..2024, 22 года
 
 FEATURE_COLS = [
     "NDVI", "NDWI", "NDMI", "SAVI",

@@ -1,171 +1,159 @@
-# Скрипты — пошаговая инструкция
+# Скрипты
 
-Все скрипты воспроизводимы и автономны. Каждый отдельно описывает что делает, что
-ожидает на входе и что создаёт на выходе. После любого скрипта можно остановиться
-и проверить промежуточный результат.
+Воспроизводимый pipeline v3: данные 2003–2025 → прогноз MAGT 2026–2035.
 
----
+**Главная инструкция по этапам:** [../PIPELINE.md](../PIPELINE.md)
 
-## Карта скриптов
-
-| Скрипт | Что делает | Время | Сценарий |
-|---|---|---|---|
-| `smoke_test.py` | Проверка импортов и компиляции 19 модулей | <1 мин | Всегда |
-| `gee_export_2003_2009.py` | GEE экспорт 7 лет × 4 поддиапазона = 28 задач | 1–3 ч (фон) | B |
-| `gee_export_2024.py` | GEE экспорт 2024 года (4 задачи) | 15–30 мин (фон) | B, D |
-| `merge_bands_extended.py` | Склейка 4 поддиапазонов → годовой geojson × 21 год | ~5 мин | B |
-| `rasterize_extended.py` | geojson → X-тензор (21, 231, 1501, 20) | ~30 сек | B |
-| `compute_target_extended.py` | TTOP target через `src.landcover` | ~10 сек | B |
-| `train_extended_21years.py` | Обучение P2 ConvLSTM на 21 годе | 5–10 мин | B |
-| `inference_p2_all_years.py` | Inference P2 на 2007–2023 (17 карт) | <1 мин | B, C |
-| `process_2024.py` | Полный pipeline для одного нового года | ~3 мин | B, D |
-| `plot_yearly_trend_p2.py` | Графики тренда + first vs last year | ~10 сек | B, C |
-| `build_interactive_map.py` | Plotly slider 2007–2024 (HTML) | ~1 мин | B, C |
-| `compare_p2_vs_p4_on_boreholes.py` | P2 vs P4 на 33 бурениях | ~2 мин | C |
-| `reproject_obu.py` | Obu 2019 TIFF (EPSG:3995) → наша сетка | ~1 мин | A |
-| `dedupe_p2_yearly_maps.py` | Утилита: убрать дубли годов в p2_yearly_maps | <5 сек | По нужде |
-| `cleanup_repo.py` | Утилита: archive research history + .gitignore | ~10 сек | Перед commit |
-
-**Сценарии (см. ниже): A — базовая P4 модель, B — P2 с нуля, C — использовать готовое, D — добавить новый год.**
+Каждый скрипт автономен: в начале файла описаны входы и выходы. После любого шага можно остановиться и проверить артефакт.
 
 ---
 
-## Сценарий A: воспроизвести базовую модель P4 с нуля
+## Скрипты в `scripts/` (актуальные)
 
-**Цель:** получить P4 winner модель (14 лет 2010–2023, val RMSE 0.76°C) и финальную карту 2023.
+### Pipeline v3 — этапы 1–8
 
-**Что нужно:**
-- `data/tensor_01deg_v2.npz` (~200 МБ) — скачать из `data/external_links.md`
-- Obu 2019 TIFF (опционально, для валидации) — скачать тот же файл
+| Этап | Скрипт | Выход | Время |
+|------|--------|-------|-------|
+| — | `smoke_test.py` | проверка импортов | <1 мин |
+| 1 | `gee_export.py` | 92 geojson на Drive → `data/gee/` | 2–4 ч (фон) |
+| 2 | `merge_bands.py` | 23 годовых geojson | ~5 мин |
+| 3a | `rasterize_extended.py` | `tensor_01deg_extended_22y.npz` | ~30 сек |
+| 3b | `rasterize_2025.py` | `tensor_01deg_extended_23y.npz` | ~30 сек |
+| 4 | `compute_target_23y.py` | `y_new_rk_landcover_extended_23y.npz` | ~10 сек |
+| 5 | `inference_p2_history.py` | `p2_yearly_maps.npz` + `p2_real_2025.npz` | ~2 мин |
+| 5a | `inference_p2_yearly_maps.py` | только `p2_yearly_maps.npz` (2007–2024) | ~1 мин |
+| 5b | `inference_p2_2025.py` | только `p2_real_2025.npz` | ~1 мин |
+| 6 | `train_p3_model_A_ensemble.py` | Model A (3 seed + BEST) | ~15 мин |
+| 6 | `train_p3_model_B_ensemble.py` | Model B (3 seed + BEST) | ~15 мин |
+| 6+ | `train_and_ensemble_7models.py` | +4 seed к Model A | ~20 мин |
+| 7 | `projection_2026_2035.py` | карты 2026–2035, synthetic tensor | ~10 мин |
+| 8 | `plot_ensemble6_final.py` | тренд 2007–2035, uncertainty, HTML | ~5 мин |
+| 8 | `plot_delta_vs_baseline.py` | ΔMAGT vs baseline 2018–2024 | ~3 мин |
+| 8 | `plot_delta_permafrost_only.py` | потепление в зоне мерзлоты | ~3 мин |
 
-**Шаги (через Jupyter notebooks):**
+### Вспомогательные
+
+| Скрипт | Назначение |
+|--------|------------|
+| `train_extended_21years.py` | Обучение P2 на 2003–2023 (нужно только если нет `convlstm_ttop_extended_21years.pt`) |
+| `reproject_obu.py` | Obu TIFF → `obu_2019_reprojected.npz` (валидация v2) |
+
+Устаревшие аналоги (`gee_export_2003_2009.py`, `process_2024.py`, …) — в `archive/research_history/scripts/`, **не использовать**.
+
+---
+
+## Prerequisites
+
+До этапа 4 (не создаются скриптами 1–3):
+
+| Файл | Источник |
+|------|----------|
+| `data/y_new_rk_landcover.npz` | В git / v2 baseline |
+| `data/maps_lh_v3.npz` | В git / notebook 03 |
+| `results/metrics/ablation_table.csv` | `notebooks/07_feature_ablation.ipynb` |
+
+Для этапа 5:
+
+| Файл | Источник |
+|------|----------|
+| `models/convlstm_ttop_extended_21years.pt` | В git **или** `train_extended_21years.py` |
+
+Подробнее: [../data/external_links.md](../data/external_links.md)
+
+---
+
+## Сценарии запуска
+
+### Сценарий 1: полный v3 pipeline с нуля
 
 ```bash
-cd ~/Ai4Arctic
-source .venv/bin/activate
-jupyter notebook notebooks/
-```
-
-Запускай notebooks по порядку:
-
-1. `01_data_preparation.ipynb` — загружает X тензор, строит landcover, считает rk_map
-2. `02_train_model.ipynb` — обучает ConvLSTM на 14 годах, lr=1e-4, 80 epochs (~30 мин на T4 GPU, ~10 мин на MPS Mac M1)
-3. `03_inference.ipynb` — inference 2023, + lh коррекция
-4. `04_validation.ipynb` — валидация: Obu, ESA, буры, MC Dropout
-5. `05_bias_correction.ipynb` — P1: pure shift калибровка → финальная карта
-6. `07_feature_ablation.ipynb` — P4: ablation 7 конфигураций (~15 мин на MPS)
-
-**Артефакты после Сценария A:**
-- `models/convlstm_ttop_rk_v2_<winner>.pt` — P4 winner (лучший val RMSE из ablation)
-- `results/maps/MAGT_2023_bias_corrected.npz` — финальная карта
-- `results/metrics/bias_correction_summary.csv` — P1 метрики
-- `results/metrics/ablation_table.csv` — P4 метрики
-
----
-
-## Сценарий B: воспроизвести P2 (расширенный 2003–2024)
-
-**Цель:** получить P2 модель + 18 годовых карт 2007–2024 + интерактивный slider.
-
-**Что нужно:**
-- Google Cloud project с включённым Earth Engine (~5 мин регистрации)
-- ~150 МБ свободного места на Google Drive
-- ~5 ГБ свободного места локально
-
-### Шаг B.1: GEE экспорт (~3 часа фоном)
-
-```bash
-# Авторизация (один раз)
 earthengine authenticate
 
-# Экспорт 2003–2009 (28 задач)
-python3 scripts/gee_export_2003_2009.py
+python3 scripts/gee_export.py --years 2003-2025 --project YOUR_GCP_PROJECT
+# скачать data/gee/ с Drive
 
-# Экспорт 2024 (4 задачи)
-python3 scripts/gee_export_2024.py
-
-# Мониторить статус: https://code.earthengine.google.com/tasks
-# Когда все COMPLETED — скачать с Drive в data/gee/
-```
-
-Должно быть **84 файлов** в `data/gee/` (21 год × 4 поддиапазона) для 2003–2023 + 4 для 2024.
-
-### Шаг B.2: Локальный pipeline (~15 мин)
-
-```bash
-# Склейка 4 поддиапазонов в годовые файлы (21 × 4 → 21 годовых)
-python3 scripts/merge_bands_extended.py
-# → data/gee/RussiaGrid_0.1deg_v2_<year>.geojson (21 файл)
-
-# Растеризация → X-тензор
+python3 scripts/merge_bands.py --years 2003-2025
 python3 scripts/rasterize_extended.py
-# → data/tensor_01deg_extended.npz (285 МБ, shape (21, 231, 1501, 20))
+python3 scripts/rasterize_2025.py
+python3 scripts/compute_target_23y.py
 
-# Пересчёт TTOP target через landcover-rk
-python3 scripts/compute_target_extended.py
-# → data/y_new_rk_landcover_extended.npz (17.5 МБ)
-# Sanity check: max abs diff vs старого y_new для 2010-2023 = 0.0000°C ✓
+python3 scripts/train_p3_model_A_ensemble.py
+python3 scripts/train_p3_model_B_ensemble.py
+python3 scripts/projection_2026_2035.py
 
-# Обучение P2 ConvLSTM на 21 годе (5–10 мин на MPS)
-python3 scripts/train_extended_21years.py
-# → models/convlstm_ttop_extended_21years.pt (val RMSE ~0.84°C)
-
-# Inference P2 на 2007–2023 (17 карт)
-python3 scripts/inference_p2_all_years.py
-# → results/maps/p2_yearly_maps.npz (28 МБ, 17 годов)
-
-# Добавить 2024 (полный pipeline в одном скрипте)
-python3 scripts/process_2024.py
-# → results/maps/p2_yearly_maps.npz (31 МБ, 18 годов)
+python3 scripts/inference_p2_history.py          # опционально
+python3 scripts/plot_ensemble6_final.py
+python3 scripts/plot_delta_vs_baseline.py
+python3 scripts/plot_delta_permafrost_only.py
 ```
 
-### Шаг B.3: Визуализации (~2 мин)
+### Сценарий 2: только прогноз (данные и модели в репо)
 
 ```bash
-# Графики тренда + 2007 vs 2024
-python3 scripts/plot_yearly_trend_p2.py
-# → results/figures/p2_yearly_trend.png
-# → results/figures/p2_first_vs_last_year.png
-
-# Интерактивный Plotly slider (HTML, открывается в браузере)
-python3 scripts/build_interactive_map.py
-# → results/figures/p2_interactive_full.html (40 МБ, для отчёта)
-# → results/figures/p2_interactive_lite.html (10 МБ, для устной защиты)
+python3 scripts/smoke_test.py
+python3 scripts/projection_2026_2035.py
+python3 scripts/plot_delta_vs_baseline.py
 ```
 
-**Артефакты после Сценария B:**
-- `models/convlstm_ttop_extended_21years.pt` — P2 модель
-- `data/tensor_01deg_extended.npz` — X для 21 года
-- `data/y_new_rk_landcover_extended.npz` — TTOP target для 21 года
-- `results/maps/p2_yearly_maps.npz` — 18 карт 2007–2024
-- `results/figures/p2_*.png/html` — графики и slider
+### Сценарий 3: baseline v2 (ноутбуки, не скрипты)
+
+P4 ablation, bias correction, валидация на Obu/ESA/бурах:
+
+```
+notebooks/01 → 02 → 03 → 04 → 05 → 07
+```
+
+См. [../notebooks/README.md](../notebooks/README.md).
+
+### Сценарий 4: добавить новый год после 2025
+
+```bash
+python3 scripts/gee_export.py --years 2026 --project YOUR_GCP_PROJECT
+# скачать 4 файла в data/gee/
+
+python3 scripts/merge_bands.py --years 2026
+# адаптировать rasterize_2025.py под новый год (скопировать логику)
+python3 scripts/compute_target_23y.py   # после обновления тензора
+```
 
 ---
 
-## Сценарий C: использовать готовые модели
+## Зависимости между скриптами
 
-**Цель:** не переобучать, а взять existing checkpoint и сделать inference.
+```
+gee_export.py
+      ↓
+merge_bands.py
+      ↓
+rasterize_extended.py  →  tensor_01deg_extended_22y.npz
+      ↓
+rasterize_2025.py      →  tensor_01deg_extended_23y.npz
+      ↓
+y_new_rk_landcover.npz → compute_target_23y.py
+      ↓
+y_new_rk_landcover_extended_23y.npz
+      ↓
+train_p3_model_A_ensemble.py ─┐
+train_p3_model_B_ensemble.py ─┤
+train_and_ensemble_7models.py ┘ (опционально)
+      ↓
+maps_lh_v3.npz → projection_2026_2035.py
+      ↓
+p3_projection_*.npz, tensor_01deg_synthetic_2026_2035.npz
+      ↓
+plot_delta_vs_baseline.py / plot_delta_permafrost_only.py
 
-**Что нужно:**
-- Загруженные `models/*.pt` (5 МБ всего)
-- `data/tensor_01deg_extended.npz` (если хочешь работать с 2003–2024)
-
-### Inference на бурениях
-
-```bash
-# Сравнить P2 и P4 на 33 бурениях
-python3 scripts/compare_p2_vs_p4_on_boreholes.py
-# → results/metrics/p2_vs_p4_boreholes_comparison.json
+(параллельная ветка для тренда)
+convlstm_ttop_extended_21years.pt → inference_p2_history.py
+      ↓
+p2_yearly_maps.npz + p2_real_2025.npz
+      ↓
+plot_ensemble6_final.py
 ```
 
-### Только обновить графики из готовых карт
+---
 
-```bash
-python3 scripts/plot_yearly_trend_p2.py        # читает p2_yearly_maps.npz
-python3 scripts/build_interactive_map.py       # читает p2_yearly_maps.npz
-```
-
-### Загрузить модель в своём Python коде
+## Загрузка модели в Python
 
 ```python
 import torch
@@ -174,112 +162,36 @@ sys.path.insert(0, '/path/to/Ai4Arctic')
 
 from src.model import ConvLSTMNet
 
-ckpt = torch.load('models/convlstm_ttop_extended_21years.pt',
+ckpt = torch.load('models/convlstm_ttop_p3_model_A_BEST.pt',
                   map_location='cpu', weights_only=False)
 model = ConvLSTMNet(in_ch=6)
 model.load_state_dict(ckpt['state_dict'])
 model.eval()
 
-# Метаданные:
-print(f"Feature names: {ckpt['feature_names']}")
-print(f"Val RMSE: {ckpt['val_rmse']}")
-print(f"y_mean: {ckpt['y_mean']}, y_std: {ckpt['y_std']}")
+print(f"Features: {ckpt['feature_names']}")
+print(f"Val RMSE: {ckpt['val_rmse']:.3f}°C")
 ```
 
 ---
 
-## Сценарий D: добавить новый год после 2024
-
-**Цель:** когда появятся данные за 2025, 2026, добавить их в slider.
-
-### Шаг D.1: GEE экспорт нового года
-
-Адаптировать `gee_export_2024.py` под нужный год — поменять `YEARS_NEW = [2025]`. Скачать 4 файла с Drive в `data/gee/`.
-
-### Шаг D.2: Обновить process_2024.py под новый год
-
-В файле `scripts/process_2024.py` поменять константу:
-
-```python
-YEAR = 2025   # было 2024
-```
-
-И запустить:
-
-```bash
-python3 scripts/process_2024.py
-# → расширяет тензор до 23 лет (2003–2025)
-# → добавляет 2025 в p2_yearly_maps.npz
-```
-
-### Шаг D.3: Перерисовать графики
-
-```bash
-python3 scripts/plot_yearly_trend_p2.py        # тренд теперь по 19 годам
-python3 scripts/build_interactive_map.py       # slider теперь 2007–2025
-```
-
-**Внимание:** MODIS Terra MOD11A1.061 заканчивается 15 октября 2025 года.
-Для полного года 2025 нужно либо ждать MODIS v7.0, либо переходить на VIIRS.
-
----
-
-## Что делать если что-то пошло не так
+## Troubleshooting
 
 | Проблема | Решение |
-|---|---|
-| `ImportError: cannot import name X from src.*` | Перезапустить kernel Jupyter (Cmd+Shift+P → Restart Kernel) |
-| `Earth Engine client library not initialized` | `earthengine authenticate` |
-| `SSL: CERTIFICATE_VERIFY_FAILED` на Mac | `/Applications/Python 3.11/Install Certificates.command` |
-| GEE задача FAILED | Проверь https://code.earthengine.google.com/tasks, типичная причина — превышение quota |
-| Дубликаты годов в p2_yearly_maps.npz | `python3 scripts/dedupe_p2_yearly_maps.py` |
-| Перед коммитом нужна очистка | `python3 scripts/cleanup_repo.py --execute` |
-| Smoke test упал | `python3 scripts/smoke_test.py 2>&1 \| tail -20` и посмотри first FAIL |
+|----------|---------|
+| `ImportError` из `src.*` | `python3 scripts/smoke_test.py`, перезапустить venv |
+| GEE не инициализируется | `earthengine authenticate` |
+| GEE задача FAILED | https://code.earthengine.google.com/tasks (quota, timeout) |
+| `SSL: CERTIFICATE_VERIFY_FAILED` (Mac) | `/Applications/Python 3.11/Install Certificates.command` |
+| Нет `tensor_23y` | Скачать из `data/external_links.md` или пройти этапы 1–3 |
+| Нет `ablation_table.csv` | Запустить `notebooks/07_feature_ablation.ipynb` |
+| Нет P2-модели для этапа 5 | Использовать чекпоинт из `models/` или `train_extended_21years.py` |
+| Smoke test 16/18 | Нормально: `src.data_extended` и `src.esa_cci` только в `archive/` |
 
 ---
 
-## Зависимости между скриптами
+## Принципы
 
-```
-gee_export_2003_2009.py  ─┐
-gee_export_2024.py       ─┤
-                          ↓
-         merge_bands_extended.py
-                          ↓
-         rasterize_extended.py  →  data/tensor_01deg_extended.npz
-                          ↓                    ↓
-         compute_target_extended.py            ↓
-                          ↓                    ↓
-         data/y_new_rk_landcover_extended.npz  ↓
-                          ↓                    ↓
-                  train_extended_21years.py ───┘
-                          ↓
-            models/convlstm_ttop_extended_21years.pt
-                          ↓
-         inference_p2_all_years.py
-                          ↓
-            results/maps/p2_yearly_maps.npz (17 лет)
-                          ↓
-         process_2024.py  →  p2_yearly_maps.npz (18 лет)
-                          ↓
-              ┌───────────┴───────────┐
-              ↓                       ↓
-   plot_yearly_trend_p2.py    build_interactive_map.py
-              ↓                       ↓
-         PNG графики          HTML slider
-```
-
----
-
-## Ключевые принципы pipeline
-
-1. **Идемпотентность.** Большинство скриптов проверяют существующие файлы и пропускают шаги:
-   - `merge_bands_extended.py` пропускает годы с уже существующим merged файлом
-   - `process_2024.py` пропускает шаги если выход уже на диске
-
-2. **Sanity checks.** `compute_target_extended.py` проверяет что для общих годов
-   (2010–2023) новый target математически идентичен старому (max abs diff < 0.001°C).
-
-3. **Воспроизводимость.** Каждый скрипт начинается с описания вход/выход, чтобы можно было запустить любой шаг отдельно.
-
-4. **Никаких heredoc/python << EOF.** Вся логика — в файлах скриптов, чтобы рецензент мог открыть и прочитать что именно делалось.
+1. **Идемпотентность** — `merge_bands.py` пропускает уже склеенные годы (без `--overwrite`).
+2. **Sanity checks** — `compute_target_23y.py` сверяет target с baseline (2010–2023).
+3. **Разделение target и inference** — этап 4 считает TTOP по формуле; нейросеть — на этапах 5–7.
+4. **Один GEE-скрипт** — `gee_export.py` заменяет старые `gee_export_2003_2009.py` и `gee_export_2025.py`.

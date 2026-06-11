@@ -88,3 +88,18 @@ scripts/cleanup_repo.py
 scripts/dedupe_p2_yearly_maps.py
 .Rhistory
 data/gee.zip
+
+# Large data files
+archive/research_history/data/*.npz
+results/maps/*.npz
+results/figures/*.html
+# === Static model data (нужны для inference) ===
+# Эти файлы создаются в notebooks 01/04/05, но НЕ генерируются финальными скриптами.
+# Включаем в репо как часть данных модели (~25 МБ суммарно).
+!data/y_new_rk_landcover.npz
+!data/maps_lh_v3.npz
+!data/obu_2019_reprojected.npz
+!data/y_new_rk_landcover_extended_23y.npz
+!data/tensor_01deg_extended_23y.npz 
+!data/y_new_rk_landcover_extended_23y.npz
+!data/tensor_01deg_extended_23y.npz

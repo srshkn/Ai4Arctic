@@ -31,6 +31,9 @@ Drive folder: GEE_exports_features_01deg_v2_extended/
 import argparse
 import sys
 import ee
+ee.Authenticate()
+ee.Initialize(project='clean-outcome-446214-a4') #здесь должен быть свой номер проекта
+print('GEE OK')
 
 
 # ===== Константы pipeline =====
