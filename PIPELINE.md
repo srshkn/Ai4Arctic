@@ -42,6 +42,7 @@
 | 8 | `plot_ensemble6_final.py` | тренд 2007–2035, HTML slider | ~5 мин | Для защиты |
 | 8 | `plot_delta_vs_baseline.py` | ΔMAGT vs baseline 2018–2024 | ~3 мин | Для защиты |
 | 8 | `plot_delta_permafrost_only.py` | потепление в зоне мерзлоты | ~3 мин | Для защиты |
+| 9 | `export_gis_all_years.py` | MAGT 2007–2035 → `.npz` + GeoTIFF | ~1 мин | Для GIS |
 
 \* Этапы 1–3 можно пропустить, если скачать готовый `tensor_01deg_extended_23y.npz` (см. external_links).  
 \** Этап 5 нужен только для графика тренда 2007–2035 (`plot_ensemble6_final.py`).
@@ -265,6 +266,23 @@ gee_export → merge_bands → rasterize_extended → rasterize_2025
                                     ↓
               (опционально) inference_p2_history → plot_ensemble6_final
 ```
+
+---
+
+## Этап 9. Экспорт для GIS (все годы 2007–2035)
+
+Склеивает историю (P2) и прогноз (P3) в один файл и опционально — GeoTIFF на каждый год.
+
+```bash
+python3 scripts/export_gis_all_years.py --export-tiff
+```
+
+| Выход | Содержимое |
+|-------|------------|
+| `results/maps/magt_all_years_2007_2035.npz` | `magt` (29, 231, 1501), `years`, `lats`, `lons` |
+| `results/gis/MAGT_<year>.tif` | GeoTIFF EPSG:4326 для QGIS / ArcGIS |
+
+По умолчанию прогноз 2026–2035 — **Model B** (`--projection modelA` для научной модели).
 
 ---
 

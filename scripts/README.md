@@ -30,6 +30,7 @@
 | 8 | `plot_ensemble6_final.py` | тренд 2007–2035, uncertainty, HTML | ~5 мин |
 | 8 | `plot_delta_vs_baseline.py` | ΔMAGT vs baseline 2018–2024 | ~3 мин |
 | 8 | `plot_delta_permafrost_only.py` | потепление в зоне мерзлоты | ~3 мин |
+| 9 | `export_gis_all_years.py` | MAGT 2007–2035 → `.npz` + GeoTIFF | ~1 мин |
 
 ### Вспомогательные
 
