@@ -1,8 +1,0 @@
-group,n_features,features,val_rmse_c,val_rmse_std,n_repeats,seed_base,best_epoch,train_time_min
-climate_core_6,6,"MAAT,LST_winter,TDD,LST_annual,FDD,era5_temp",0.7631195253446125,0.0,1,42,3,2.281669020652771
-climate_soil_9,9,"MAAT,LST_winter,TDD,LST_annual,FDD,era5_temp,snow_days,soil_oc,MAP",0.7714966336817329,0.0,1,42,10,3.594953934351603
-all_20,20,"NDVI,NDWI,NDMI,SAVI,LST_summer,LST_winter,LST_annual,FDD,TDD,snow_days,elevation,slope,aspect,soil_oc,soil_bd,soil_clay,MAAT,MAP,era5_temp,era5_precip",0.7944803236604178,0.0,1,42,8,3.4632951339085896
-compact_12,12,"MAAT,LST_summer,LST_winter,LST_annual,era5_temp,TDD,FDD,NDVI,NDWI,snow_days,MAP,soil_oc",0.8021795090285168,0.0,1,42,8,3.4210047205289205
-climate_wet_8,8,"MAAT,LST_winter,TDD,LST_annual,FDD,era5_temp,NDVI,NDWI",0.8181245210576714,0.0,1,42,1,1.9045626521110535
-no_soil_17,17,"NDVI,NDWI,NDMI,SAVI,LST_summer,LST_winter,LST_annual,FDD,TDD,snow_days,elevation,slope,aspect,MAAT,MAP,era5_temp,era5_precip",0.8597995709647224,0.0,1,42,8,3.3271493156750997
-no_terrain_17,17,"NDVI,NDWI,NDMI,SAVI,LST_summer,LST_winter,LST_annual,FDD,TDD,snow_days,soil_oc,soil_bd,soil_clay,MAAT,MAP,era5_temp,era5_precip",0.8876795669858902,0.0,1,42,8,3.36191611289978

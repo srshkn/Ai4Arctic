@@ -99,3 +99,55 @@ results/figures/*.html
 !data/y_new_rk_landcover.npz
 !data/maps_lh_v3.npz
 !data/obu_2019_reprojected.npz
+
+# === Реструктуризация в model/ (v3-final-defense) ===
+# Большие данные (генерируются скриптами)
+model/data/*.npz
+model/data/*.tif
+model/data/*.nc
+model/data/*.geojson
+model/data/raw/
+model/data/processed/
+model/data/gee/
+model/data/esa_cci/
+model/data/tensor_*.npz
+model/data/y_new_rk_landcover_extended*.npz
+model/data/esa_cci_target_*.npz
+model/data/gee.zip
+model/data/gee*.zip
+
+# Чекпоинты во время обучения (не финальные)
+model/models/checkpoints/
+model/models/*_epoch_*.pt
+model/models/_BACKUP_*
+
+# Большие интерактивные HTML
+model/results/figures/p2_interactive_*.html
+model/results/figures/p3_interactive_*.html
+
+# Архив
+archive/research_history/data/*.npz
+
+# Static model data (исключения - нужны в репо)
+
+# Финальные результаты (исключения - нужны в репо)
+!model/results/maps/FINAL_maps.npz
+!model/results/maps/ALT_2023.npz
+!model/results/maps/bonus_results.npz
+!model/results/maps/uncertainty_mc_dropout.npz
+!model/results/maps/magt_all_years_2007_2035.npz
+
+# Static model data exclusions
+!model/data/y_new_rk_landcover.npz
+!model/data/maps_lh_v3.npz
+!model/data/obu_2019_reprojected.npz
+!model/data/y_new_rk_landcover_extended_23y.npz
+!model/data/boreholes/*.csv
+
+# Important results exclusions
+!model/results/maps/p2_yearly_maps.npz
+!model/results/maps/p2_real_2025.npz
+!model/results/maps/baseline_2018_2024.npz
+!model/results/maps/p3_projection_2026_2035_modelA.npz
+!model/results/maps/p3_projection_2026_2035_modelB.npz
+model/scripts/cleanup_repo.py

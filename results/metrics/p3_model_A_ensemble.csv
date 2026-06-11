@@ -1,4 +1,0 @@
-seed,val_rmse,best_epoch,time_min,model_path
-42,0.7807,3,7.1841,models/convlstm_ttop_p3_model_A_seed_42.pt
-123,0.7850,11,9.4968,models/convlstm_ttop_p3_model_A_seed_123.pt
-456,0.7892,11,9.7419,models/convlstm_ttop_p3_model_A_seed_456.pt

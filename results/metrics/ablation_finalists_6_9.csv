@@ -1,3 +1,0 @@
-group,n_features,features,val_rmse_c,val_rmse_std,n_repeats,seed_base,best_epoch,train_time_min
-climate_core_6,6,"MAAT,LST_winter,TDD,LST_annual,FDD,era5_temp",0.79773611658387,0.03172217327571576,3,42,3,9.06473529736201
-climate_soil_9,9,"MAAT,LST_winter,TDD,LST_annual,FDD,era5_temp,snow_days,soil_oc,MAP",0.808391494079216,0.03388008188479346,3,42,10,8.568754637241364
