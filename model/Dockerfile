@@ -39,6 +39,4 @@ COPY --from=builder /app/.venv /app/.venv
 
 COPY --from=builder /app /app
 
-EXPOSE 8080
-
-CMD ["make", "run"]
+CMD ["tail", "-f", "/dev/null"]
