@@ -1,0 +1,37 @@
+{
+  "name": "ai4arctic-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.10.0",
+    "@maplibre/maplibre-gl-style-spec": "^23.1.0",
+    "@types/leaflet": "^1.9.21",
+    "axios": "^1.16.1",
+    "leaflet": "^1.9.4",
+    "maplibre-gl": "^4.7.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.76.0",
+    "react-leaflet": "^4.2.1",
+    "react-router-dom": "^6.30.3",
+    "zod": "^3.25.76",
+    "zustand": "^5.0.13"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.9",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.0"
+  }
+}
