@@ -23,3 +23,118 @@ __pycache__
 .ruff_cache
 # === FRONTEND ===
 node_modules/
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.installed.cfg
+*.egg
+
+# === Jupyter ===
+.ipynb_checkpoints/
+*.ipynb-checkpoint
+
+# === Virtual environments ===
+venv/
+env/
+.venv/
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# === OS ===
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# === Sync with development branch ===
+experiments/
+*.env
+*.pem
+.pytest_cache
+.ruff_cache
+node_modules/
+
+# === Temporary / backup files ===
+*.tmp
+*.log
+*.bak
+*.backup
+*~
+.*.swp
+.Rhistory
+
+# === Notebooks (drafts and tests) ===
+notebooks/draft_*.ipynb
+notebooks/test_*.ipynb
+notebooks/_*.ipynb
+
+# === Private files (not for public repo) ===
+CHECKLIST.md
+LICENSE
+SETUP_LOCAL_COLAB.md
+MASTER_PLAN.md
+
+# === Archive ===
+archive/research_history/data/*.npz
+
+# ================================================================
+# model/ — production code, data, weights, results (for Docker)
+# ================================================================
+
+# === Large generated data (excluded) ===
+model/data/*.npz
+model/data/*.tif
+model/data/*.nc
+model/data/*.geojson
+model/data/raw/
+model/data/processed/
+model/data/gee/
+model/data/esa_cci/
+model/data/tensor_*.npz
+model/data/y_new_rk_landcover_extended*.npz
+model/data/esa_cci_target_*.npz
+model/data/gee*.zip
+
+# === Static model data — KEEP in repo (needed for inference) ===
+!model/data/y_new_rk_landcover.npz
+!model/data/y_new_rk_landcover_extended_23y.npz
+!model/data/maps_lh_v3.npz
+!model/data/obu_2019_reprojected.npz
+!model/data/boreholes/*.csv
+
+# === Training checkpoints (not final) ===
+model/models/checkpoints/
+model/models/*_epoch_*.pt
+model/models/_BACKUP_*
+
+# === Large result files ===
+model/results/maps/*.npz
+model/results/figures/*.html
+model/results/figures/p2_interactive_*.html
+model/results/figures/p3_interactive_*.html
+
+# === Important results — KEEP in repo ===
+!model/results/maps/FINAL_maps.npz
+!model/results/maps/ALT_2023.npz
+!model/results/maps/bonus_results.npz
+!model/results/maps/uncertainty_mc_dropout.npz
+!model/results/maps/magt_all_years_2007_2035.npz
+!model/results/maps/p2_yearly_maps.npz
+!model/results/maps/p2_real_2025.npz
+!model/results/maps/baseline_2018_2024.npz
+!model/results/maps/p3_projection_2026_2035_modelA.npz
+!model/results/maps/p3_projection_2026_2035_modelB.npz
+
+# GeoTIFF files (model/results/geotiff/) — NOT ignored, tracked by default for backend.
+
+# === Scripts to exclude ===
+model/scripts/cleanup_repo.py
