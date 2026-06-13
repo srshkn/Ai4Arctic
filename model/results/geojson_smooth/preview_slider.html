@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>MAGT 2007–2035 — Permafrost Zones Slider</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body, html { margin: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    #map { position: absolute; top: 0; left: 0; right: 0; bottom: 70px; }
+    #controls { position: absolute; bottom: 0; left: 0; right: 0; height: 70px;
+                background: #fafafa; border-top: 1px solid #ddd; padding: 12px 24px;
+                display: flex; align-items: center; gap: 16px; }
+    #year { font-size: 22px; font-weight: 600; min-width: 70px; }
+    #slider { flex: 1; }
+    #legend { position: absolute; top: 12px; right: 12px; z-index: 1000;
+              background: rgba(255,255,255,0.95); padding: 10px 14px;
+              border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+              font-size: 11px; max-height: calc(100vh - 100px); overflow-y: auto; }
+    #legend h4 { margin: 0 0 6px 0; font-size: 12px; }
+    #legend .row { display: flex; align-items: center; margin: 2px 0; }
+    #legend .sw { width: 16px; height: 12px; margin-right: 8px; border: 1px solid #999; }
+    #info { position: absolute; top: 12px; left: 60px; z-index: 1000;
+            background: rgba(255,255,255,0.95); padding: 6px 12px;
+            border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            font-size: 12px; color: #555; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="info">Drag slider · 29 years · 15 classes · EPSG:4326</div>
+  <div id="legend">
+    <h4>MAGT (°C)</h4>
+    <div class="row"><span class="sw" style="background:#1c5c9f"></span><span class="lbl">< -10.0°C</span></div>
+<div class="row"><span class="sw" style="background:#4393c3"></span><span class="lbl">-10.0..-8.0°C</span></div>
+<div class="row"><span class="sw" style="background:#78b4d5"></span><span class="lbl">-8.0..-6.0°C</span></div>
+<div class="row"><span class="sw" style="background:#9dcbe1"></span><span class="lbl">-6.0..-5.0°C</span></div>
+<div class="row"><span class="sw" style="background:#b1d5e7"></span><span class="lbl">-5.0..-4.0°C</span></div>
+<div class="row"><span class="sw" style="background:#c7e0ed"></span><span class="lbl">-4.0..-3.0°C</span></div>
+<div class="row"><span class="sw" style="background:#d7e8f1"></span><span class="lbl">-3.0..-2.0°C</span></div>
+<div class="row"><span class="sw" style="background:#e4eef4"></span><span class="lbl">-2.0..-1.0°C</span></div>
+<div class="row"><span class="sw" style="background:#f0f4f6"></span><span class="lbl">-1.0..0.0°C</span></div>
+<div class="row"><span class="sw" style="background:#f9f0eb"></span><span class="lbl">0.0..1.0°C</span></div>
+<div class="row"><span class="sw" style="background:#fce2d2"></span><span class="lbl">1.0..2.0°C</span></div>
+<div class="row"><span class="sw" style="background:#fbccb4"></span><span class="lbl">2.0..3.0°C</span></div>
+<div class="row"><span class="sw" style="background:#f3a481"></span><span class="lbl">3.0..5.0°C</span></div>
+<div class="row"><span class="sw" style="background:#cc4c44"></span><span class="lbl">5.0..8.0°C</span></div>
+<div class="row"><span class="sw" style="background:#8a0b25"></span><span class="lbl">> 8.0°C</span></div>
+  </div>
+  <div id="controls">
+    <div id="year">2025</div>
+    <input id="slider" type="range" min="0" max="28" value="18" step="1" />
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const YEARS = [2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035];
+    const map = L.map('map').setView([67, 105], 3);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                { attribution: '© OpenStreetMap' }).addTo(map);
+
+    let currentLayer = null;
+    const cache = {};
+
+    async function load(year) {
+      if (!cache[year]) {
+        const r = await fetch(`magt_smooth_${year}.geojson`);
+        cache[year] = await r.json();
+      }
+      return cache[year];
+    }
+
+    async function show(year) {
+      const data = await load(year);
+      if (currentLayer) map.removeLayer(currentLayer);
+      currentLayer = L.geoJSON(data, {
+        style: f => ({
+          fillColor:   f.properties.color,
+          fillOpacity: 0.78,
+          color:       '#333',
+          weight:      0.2,
+          opacity:     0.4
+        }),
+        onEachFeature: (f, layer) => {
+          layer.bindTooltip(f.properties.label, { sticky: true });
+        }
+      }).addTo(map);
+      document.getElementById('year').textContent = year;
+    }
+
+    const slider = document.getElementById('slider');
+    slider.addEventListener('input', () => show(YEARS[+slider.value]));
+    show(YEARS[+slider.value]);
+
+    // Prefetch neighbors after first paint
+    setTimeout(() => YEARS.forEach((y, i) => {
+      if (Math.abs(i - +slider.value) <= 3) load(y);
+    }), 500);
+  </script>
+</body>
+</html>
