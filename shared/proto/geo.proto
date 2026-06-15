@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package geo;
+
+service GeoImportService {
+  rpc ImportMagtDataset(ImportMagtDatasetRequest) returns (ImportMagtDatasetResponse);
+}
+
+message Layer {
+  int32 class_id = 1;
+
+  string color = 2;
+
+  string label = 3;
+
+  optional double magt_min = 4;
+  optional double magt_max = 5;
+
+  string geometry = 6;
+}
+
+message ImportMagtDatasetRequest {
+  string dataset_name = 1;
+
+  int32 year = 2;
+
+  repeated Layer layers = 3;
+}
+
+message ImportMagtDatasetResponse {
+  bool success = 1;
+
+  int64 dataset_id = 2;
+
+  string message = 3;
+}
