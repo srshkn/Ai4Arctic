@@ -1,8 +1,7 @@
 import uuid
-from datetime import date, datetime
+from datetime import datetime
 
-from geoalchemy2 import Geometry
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Numeric, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import CITEXT, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -52,21 +51,3 @@ class RefreshToken(Base):
     revoked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     user: Mapped[User] = relationship(back_populates="refresh_tokens")
-
-
-# Таблица гео-данных NDVI
-class NDVI(Base):
-    __tablename__ = "ndvi"
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
-    name: Mapped[str] = mapped_column(String(75), nullable=False)
-
-    year: Mapped[date] = mapped_column(Date, nullable=False)
-    ndvi: Mapped[float] = mapped_column(Numeric(7, 6), nullable=False)
-    ndwi_1: Mapped[float] = mapped_column(Numeric(7, 6), nullable=False)
-    ndwi_2: Mapped[float] = mapped_column(Numeric(7, 6), nullable=False)
-    savi: Mapped[float] = mapped_column(Numeric(7, 6), nullable=False)
-
-    geom = mapped_column(Geometry("POLYGON", srid=4326), nullable=False)

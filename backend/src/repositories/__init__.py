@@ -1,3 +1,3 @@
-from .repositories import AuthRepository, UserRepository
+from .repositories import AuthRepository, GeoRepository, UserRepository
 
-__all__ = ["UserRepository", "AuthRepository"]
+__all__ = ["UserRepository", "AuthRepository", "GeoRepository"]

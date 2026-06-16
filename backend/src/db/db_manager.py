@@ -2,7 +2,7 @@ from typing import Callable
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.repositories import AuthRepository, UserRepository
+from src.repositories import AuthRepository, GeoRepository, UserRepository
 
 from .database import SessionLocal
 
@@ -13,11 +13,13 @@ class DBManager:
         self.session: AsyncSession | None = None
         self.users: UserRepository | None = None
         self.auth: AuthRepository | None = None
+        self.geo: GeoRepository | None = None
 
     async def __aenter__(self) -> "DBManager":
         self.session = self.session_factory()
         self.users = UserRepository(self.session)
         self.auth = AuthRepository(self.session)
+        self.geo = GeoRepository(self.session)
         return self
 
     async def __aexit__(self, *args) -> None:

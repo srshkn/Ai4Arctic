@@ -95,3 +95,32 @@ class AuthService:
         )
         await self.db.session.commit()
         return TokenPair(access_token=access_token, refresh_token=refresh_token)
+
+
+class GeoService:
+    def __init__(self, db: DBManager):
+        self.db = db
+
+    async def add_geojson_db(self, data: dict) -> bool:
+        geometry = data["geometry"]
+        properties = data["properties"]
+
+        flag = await self.db.geo.get_geo_year(properties["year"])
+
+        if flag:
+            raise
+
+        geo_data = await self.db.geo.add_geo_data(
+            year=properties["year"],
+            class_id=properties["class_id"],
+            color=properties["color"],
+            magt_min=properties.get("magt_min", 0.0),
+            magt_max=properties.get("magt_max", 0.0),
+            label=properties["label"],
+            geometry=geometry,
+        )
+        if geo_data:
+            await self.db.session.commit()
+            return True
+        else:
+            return False
