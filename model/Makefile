@@ -12,4 +12,4 @@ help:
 	@echo "  make go-backend - ..."
 
 go-backend:
-	uv run grpc_client/client.py
+    python -m grpc_client.client

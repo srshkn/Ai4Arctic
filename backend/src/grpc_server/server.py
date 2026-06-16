@@ -1,33 +1,42 @@
-from concurrent import futures
+import json
 
 import grpc
 
+from src.db import DBManager, SessionLocal
 from src.grpc_server.contract import geo_pb2, geo_pb2_grpc
+from src.services import GeoService
 
 
 class GeoImportService(geo_pb2_grpc.GeoImportServiceServicer):
-    def ImportMagtDataset(self, request, context):
-        print("dataset:", request.dataset_name)
-        print("year:", request.year)
-        print("layers:", len(request.layers))
+    def __init__(self, session):
+        self.session = session
 
-        # TODO: сохранить в PostGIS
+    async def ImportMagtDataset(self, request, context):
+        print("geojson go")
+        async with self.session as db:
+            service = GeoService(db)
+
+            feature = json.loads(request.geojson)["features"][0]
+
+            flag = await service.add_geojson_db(feature)
 
         return geo_pb2.ImportMagtDatasetResponse(  # type: ignore[attr-defined]
-            success=True, dataset_id=123, message="Imported successfully"
+            success=True, message="Imported successfully"
         )
 
 
-def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+async def server():
+    server = grpc.aio.server()
 
-    geo_pb2_grpc.add_GeoImportServiceServicer_to_server(GeoImportService(), server)
+    geo_pb2_grpc.add_GeoImportServiceServicer_to_server(
+        GeoImportService(DBManager(SessionLocal)), server
+    )
 
     server.add_insecure_port("[::]:50051")
-    server.start()
+    await server.start()
     print("gRPC server started on :50051")
-    server.wait_for_termination()
+    await server.wait_for_termination()
 
 
-if __name__ == "__main__":
-    serve()
+# if __name__ == "__main__":
+#    serve()

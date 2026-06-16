@@ -1,10 +1,11 @@
+import json
 from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models import RefreshToken, User
+from src.models import MagtFeature, RefreshToken, User
 
 
 class UserRepository:
@@ -52,3 +53,40 @@ class AuthRepository:
 
     async def delete_refresh_token(self, token_obj: RefreshToken) -> None:
         await self.session.delete(token_obj)
+
+
+class GeoRepository:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def get_geo_year(self, year: int) -> bool:
+        flag = await self.session.scalar(
+            select(MagtFeature).where(MagtFeature.year == year)
+        )
+        if flag:
+            return True
+
+        return False
+
+    async def add_geo_data(
+        self,
+        year: int,
+        class_id: int,
+        color: str,
+        magt_min: float,
+        magt_max: str,
+        label: str,
+        geometry: object,
+    ) -> MagtFeature:
+        geo_data = MagtFeature(
+            year=year,
+            class_id=class_id,
+            color=color,
+            magt_min=magt_min,
+            magt_max=magt_max,
+            label=label,
+            geometry=json.dumps(geometry),
+        )
+        self.session.add(geo_data)
+        await self.session.flush()
+        return geo_data

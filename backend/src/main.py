@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, status
@@ -5,13 +6,19 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api import Tags, all_router, tags_metadata
 from src.core import get_settings
+from src.grpc_server.server import server
 
 settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    yield
+    grpc_task = asyncio.create_task(server())
+
+    try:
+        yield
+    finally:
+        grpc_task.cancel()
 
 
 app = FastAPI(

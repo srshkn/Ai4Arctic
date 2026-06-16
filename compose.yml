@@ -23,7 +23,7 @@ services:
 
   backend:
     build:
-      context: ./backend 
+      context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
@@ -41,6 +41,19 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     networks:
       - app
+
+  model:
+    build:
+      context: ./model
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    environment:
+      GRPC_HOST: "backend:50051"
+    networks:
+      - app
+    tty: true
+    stdin_open: true
 
 volumes:
   postgres_data:
