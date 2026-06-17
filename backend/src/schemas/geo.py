@@ -1,3 +1,5 @@
+from typing import Any
+
 from .config import APIModel
 
 
@@ -13,7 +15,7 @@ class PropertiesResponse(APIModel):
 class FeatureResponse(APIModel):
     type: str = "Feature"
     properties: PropertiesResponse
-    geometry: dict
+    geometry: Any
 
 
 class MagtGeoJsonResponse(APIModel):

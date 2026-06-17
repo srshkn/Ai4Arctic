@@ -127,15 +127,15 @@ class GeoService:
             res.append(
                 FeatureResponse(
                     properties=PropertiesResponse(
-                        year=feature.year,
-                        class_id=feature.class_id,
-                        color=feature.color,
-                        magt_max=feature.magt_max,
-                        magt_min=feature.magt_min,
-                        label=feature.label,
+                        year=feature["year"],
+                        class_id=feature["class_id"],
+                        color=feature["color"],
+                        magt_max=feature["magt_max"],
+                        magt_min=feature["magt_min"],
+                        label=feature["label"],
                     ),
-                    geometry=feature.geometry,
+                    geometry=feature["geometry"],
                 )
             )
-
+        await self.db.session.commit()
         return res
