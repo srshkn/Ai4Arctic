@@ -2,7 +2,8 @@ import json
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import select
+from geoalchemy2.functions import ST_AsGeoJSON
+from sqlalchemy import String, cast, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models import MagtFeature, RefreshToken, User
@@ -59,14 +60,17 @@ class GeoRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_geo_year(self, year: int) -> bool:
+    async def get_row(self, year: int, class_id: int) -> bool:
         flag = await self.session.scalar(
-            select(MagtFeature).where(MagtFeature.year == year)
+            select(MagtFeature).where(
+                MagtFeature.year == year,
+                MagtFeature.class_id == class_id,
+            )
         )
         if flag:
             return True
-
-        return False
+        else:
+            return False
 
     async def add_geo_data(
         self,
@@ -90,3 +94,33 @@ class GeoRepository:
         self.session.add(geo_data)
         await self.session.flush()
         return geo_data
+
+    async def get_geojson(self, year: int) -> list[dict]:
+        properties = []
+        features = await self.session.execute(
+            select(
+                MagtFeature.year,
+                MagtFeature.class_id,
+                MagtFeature.color,
+                MagtFeature.magt_max,
+                MagtFeature.magt_min,
+                MagtFeature.label,
+                cast(ST_AsGeoJSON(MagtFeature.geometry), String).label("geometry"),
+            ).where(
+                MagtFeature.year == year,
+            )
+        )
+
+        for row in features.all():
+            properties.append(
+                {
+                    "year": row.year,
+                    "class_id": row.class_id,
+                    "color": row.color,
+                    "magt_max": row.magt_max,
+                    "magt_min": row.magt_min,
+                    "label": row.label,
+                    "geometry": json.loads(row.geometry),
+                }
+            )
+        return properties

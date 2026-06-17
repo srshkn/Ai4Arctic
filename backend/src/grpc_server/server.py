@@ -16,9 +16,8 @@ class GeoImportService(geo_pb2_grpc.GeoImportServiceServicer):
         async with self.session as db:
             service = GeoService(db)
 
-            feature = json.loads(request.geojson)["features"][0]
-
-            flag = await service.add_geojson_db(feature)
+            for feature in json.loads(request.geojson)["features"]:
+                await service.add_geojson_db(feature)
 
         return geo_pb2.ImportMagtDatasetResponse(  # type: ignore[attr-defined]
             success=True, message="Imported successfully"

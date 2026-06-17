@@ -10,7 +10,7 @@ from src.core.exceptions import (
     UserNotFoundError,
 )
 from src.db import DBManager
-from src.schemas import TokenPair
+from src.schemas import FeatureResponse, PropertiesResponse, TokenPair
 
 settings = get_settings()
 security = get_security()
@@ -101,26 +101,41 @@ class GeoService:
     def __init__(self, db: DBManager):
         self.db = db
 
-    async def add_geojson_db(self, data: dict) -> bool:
+    async def add_geojson_db(self, data: dict) -> None:
         geometry = data["geometry"]
         properties = data["properties"]
 
-        flag = await self.db.geo.get_geo_year(properties["year"])
+        flag = await self.db.geo.get_row(properties["year"], properties["class_id"])
 
-        if flag:
-            raise
+        if not (flag):
+            geo_data = await self.db.geo.add_geo_data(
+                year=properties["year"],
+                class_id=properties["class_id"],
+                color=properties["color"],
+                magt_min=properties["magt_min"],
+                magt_max=properties["magt_max"],
+                label=properties["label"],
+                geometry=geometry,
+            )
+            if geo_data:
+                await self.db.session.commit()
 
-        geo_data = await self.db.geo.add_geo_data(
-            year=properties["year"],
-            class_id=properties["class_id"],
-            color=properties["color"],
-            magt_min=properties.get("magt_min", 0.0),
-            magt_max=properties.get("magt_max", 0.0),
-            label=properties["label"],
-            geometry=geometry,
-        )
-        if geo_data:
-            await self.db.session.commit()
-            return True
-        else:
-            return False
+    async def get_geojson(self, year: int) -> list[FeatureResponse]:
+        features = await self.db.geo.get_geojson(year)
+        res = []
+        for feature in features:
+            res.append(
+                FeatureResponse(
+                    properties=PropertiesResponse(
+                        year=feature["year"],
+                        class_id=feature["class_id"],
+                        color=feature["color"],
+                        magt_max=feature["magt_max"],
+                        magt_min=feature["magt_min"],
+                        label=feature["label"],
+                    ),
+                    geometry=feature["geometry"],
+                )
+            )
+        await self.db.session.commit()
+        return res
