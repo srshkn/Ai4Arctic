@@ -10,7 +10,7 @@ from src.core.exceptions import (
     UserNotFoundError,
 )
 from src.db import DBManager
-from src.schemas import TokenPair
+from src.schemas import FeatureResponse, PropertiesResponse, TokenPair
 
 settings = get_settings()
 security = get_security()
@@ -119,3 +119,23 @@ class GeoService:
             )
             if geo_data:
                 await self.db.session.commit()
+
+    async def get_geojson(self, year: int) -> list[FeatureResponse]:
+        features = await self.db.geo.get_geojson(year)
+        res = []
+        for feature in features:
+            res.append(
+                FeatureResponse(
+                    properties=PropertiesResponse(
+                        year=feature.year,
+                        class_id=feature.class_id,
+                        color=feature.color,
+                        magt_max=feature.magt_max,
+                        magt_min=feature.magt_min,
+                        label=feature.label,
+                    ),
+                    geometry=feature.geometry,
+                )
+            )
+
+        return res
