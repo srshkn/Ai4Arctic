@@ -47,6 +47,78 @@ export interface PermafrostProperties {
   source?: string;
 }
 
+// ==================== MAGT Class Types (for heat regime layers) ====================
+
+/** Configuration for a single MAGT class layer (class_id 1-15). Color is taken from GeoJSON data. */
+export interface MagtClassConfig {
+  id: number;
+  label: string;
+  color: string;
+  temperatureRange: string;
+}
+
+/**
+ * Temperature range labels for MAGT classes 1-15.
+ * class_id 1 = coldest, class_id 15 = warmest (> 8°C)
+ * Color is dynamically loaded from GeoJSON data at runtime.
+ */
+export const MAGT_CLASS_RANGES: Array<{ id: number; label: string; temperatureRange: string }> = [
+  { id: 1, label: 'Класс 1', temperatureRange: '< 0.0°C' },
+  { id: 2, label: 'Класс 2', temperatureRange: '0.0..0.5°C' },
+  { id: 3, label: 'Класс 3', temperatureRange: '0.5..1.0°C' },
+  { id: 4, label: 'Класс 4', temperatureRange: '1.0..1.5°C' },
+  { id: 5, label: 'Класс 5', temperatureRange: '1.5..2.0°C' },
+  { id: 6, label: 'Класс 6', temperatureRange: '2.0..2.5°C' },
+  { id: 7, label: 'Класс 7', temperatureRange: '2.5..3.0°C' },
+  { id: 8, label: 'Класс 8', temperatureRange: '3.0..3.5°C' },
+  { id: 9, label: 'Класс 9', temperatureRange: '3.5..4.0°C' },
+  { id: 10, label: 'Класс 10', temperatureRange: '4.0..4.5°C' },
+  { id: 11, label: 'Класс 11', temperatureRange: '4.5..5.0°C' },
+  { id: 12, label: 'Класс 12', temperatureRange: '5.0..5.5°C' },
+  { id: 13, label: 'Класс 13', temperatureRange: '5.5..6.0°C' },
+  { id: 14, label: 'Класс 14', temperatureRange: '6.0..7.0°C' },
+  { id: 15, label: 'Класс 15', temperatureRange: '> 8.0°C' },
+];
+
+/** Lookup map: class_id → range info */
+export const MAGT_CLASS_RANGE_MAP: Record<number, { id: number; label: string; temperatureRange: string }> = {};
+MAGT_CLASS_RANGES.forEach((range) => {
+  MAGT_CLASS_RANGE_MAP[range.id] = range;
+});
+
+/** Build MagtClassConfig[] with colors from GeoJSON feature properties */
+export function buildMagtClassConfigs(geojsonData: FeatureCollection<PolygonGeometry, PermafrostFeatureProperties> | null): MagtClassConfig[] {
+  if (!geojsonData || !geojsonData.features) return [];
+
+  // Collect the first occurrence color for each class_id
+  const colorMap = new Map<number, string>();
+  for (const feature of geojsonData.features) {
+    const props = feature.properties as PermafrostFeatureProperties;
+    const classId = props.class_id;
+    const color = props.color;
+    if (classId != null && typeof classId === 'number' && Number.isInteger(classId) && color) {
+      if (!colorMap.has(classId)) {
+        colorMap.set(classId, color as string);
+      }
+    }
+  }
+
+  // Build configs using MAGT_CLASS_RANGES as base + colors from GeoJSON
+  const result: MagtClassConfig[] = [];
+  for (const range of MAGT_CLASS_RANGES) {
+    const color = colorMap.get(range.id);
+    if (color) {
+      result.push({
+        id: range.id,
+        label: range.label,
+        color,
+        temperatureRange: range.temperatureRange,
+      });
+    }
+  }
+  return result;
+}
+
 // ==================== GeoJSON Types (RFC 7946) ====================
 
 export interface GeoJsonObject {

@@ -1,98 +1,141 @@
-import { useEffect, useRef } from 'react';
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-declare const maplibregl: any;
+import { useEffect, useMemo } from 'react';
+import { MapContainer as LeafletMap, TileLayer, GeoJSON, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import type { FeatureCollection, PolygonGeometry, PermafrostFeatureProperties } from '../types';
+
+// Fix default marker icon issue in react-leaflet
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
 
 interface MapContainerProps {
   center: [number, number];
   zoom: number;
   onZoomChange: (zoom: number) => void;
-  children?: React.ReactNode;
+  geojsonData: FeatureCollection<PolygonGeometry, PermafrostFeatureProperties> | null;
+  selectedType: string | 'all';
+  layerVisibility: Record<number, boolean>;
+  year?: number;
 }
 
-export function MapContainer({ center, zoom, onZoomChange, children }: MapContainerProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapInstanceRef = useRef<any | null>(null);
-  const initializedRef = useRef(false);
+// Component to handle zoom changes from map interaction
+function MapController({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {
+  const map = useMap();
 
-  // Initialize the map once
   useEffect(() => {
-    if (!mapRef.current || initializedRef.current || !maplibregl) return;
-
-    const map = new maplibregl.Map({
-      container: mapRef.current,
-      style: {
-        version: 8,
-        sources: {
-          osm: {
-            type: 'raster',
-            url: 'https://tile.openstreetmap.org/20.json',
-            tileSize: 256,
-          },
-        },
-        layers: [
-          {
-            id: 'osm-tiles',
-            type: 'raster',
-            source: 'osm',
-            minzoom: 0,
-            maxzoom: 19,
-          },
-        ],
-      },
-      center: center,
-      zoom: zoom,
-      minZoom: 2,
-      maxZoom: 10,
-    });
-
-    // Add navigation controls
-    map.addControl(new maplibregl.NavigationControl(), 'top-right');
-
-    // Add scale control
-    map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-right');
-
-    mapInstanceRef.current = map;
-    initializedRef.current = true;
-
-    // Sync zoom with store
     map.on('zoomend', () => {
-      const currentZoom = map.getZoom();
-      onZoomChange(currentZoom);
+      onZoomChange(map.getZoom());
     });
+  }, [map, onZoomChange]);
 
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
+  return null;
+}
+
+/**
+ * Get the style for a GeoJSON feature based on its class_id and layer visibility.
+ * Features use their own `color` property from the GeoJSON data.
+ */
+function styleFeature(
+  featureProperties: PermafrostFeatureProperties,
+  _selectedType: string | 'all',
+  layerVisibility: Record<number, boolean>
+): L.PathOptions {
+  const classId = featureProperties.class_id;
+
+  // If no class_id, make feature invisible
+  if (classId == null) {
+    return {
+      fillColor: 'transparent',
+      fillOpacity: 0,
+      color: 'transparent',
+      weight: 0,
     };
-  }, []); // Only run once
+  }
 
-  // Sync center changes from store
-  useEffect(() => {
-    if (!mapInstanceRef.current || !initializedRef.current) return;
-    mapInstanceRef.current.flyTo({
-      center: center,
-      duration: 800,
-      essential: true,
-    });
-  }, [center]);
+  const numericClassId = Number(classId);
 
-  // Sync zoom changes from store (when changed via slider)
-  const prevZoomRef = useRef(zoom);
+  // Check if this layer is visible
+  if (!layerVisibility[numericClassId]) {
+    return {
+      fillColor: 'transparent',
+      fillOpacity: 0,
+      color: 'transparent',
+      weight: 0,
+    };
+  }
+
+  // Use the color directly from the GeoJSON feature properties
+  const color = (featureProperties.color as string) || '#95a5a6';
+
+  return {
+    fillColor: color,
+    fillOpacity: 0.75,
+    color: 'rgba(255, 255, 255, 0.4)',
+    weight: 0.5,
+    opacity: 1,
+  };
+}
+
+// Bounds for Russia territory: [southWestCorner, northEastCorner]
+const RUSSIA_BOUNDS: L.LatLngBoundsLiteral = [
+  [41, 19],   // South-West (Kaliningrad to Crimea area)
+  [82, 180],  // North-East (Chukotka to Arctic)
+];
+
+// Zoom limits to prevent seeing the world map multiple times
+const MIN_ZOOM = 3;
+const MAX_ZOOM = 12;
+
+export function MapContainer({ center, zoom, onZoomChange, geojsonData, selectedType, layerVisibility, year = 2024 }: MapContainerProps) {
   useEffect(() => {
-    if (!mapInstanceRef.current || !initializedRef.current) return;
-    if (zoom !== prevZoomRef.current) {
-      mapInstanceRef.current.zoomTo(zoom, { duration: 300, essential: true });
-      prevZoomRef.current = zoom;
-    }
-  }, [zoom]);
+    // Force map to update dimensions after mount
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Memoize style function to prevent unnecessary re-renders
+  const geoJSONStyle = useMemo(() => (feature: any) => {
+    if (!feature) return { fillColor: 'transparent', fillOpacity: 0 };
+    const props = feature.properties as PermafrostFeatureProperties;
+    return styleFeature(props, selectedType, layerVisibility);
+  }, [selectedType, layerVisibility]);
 
   return (
-    <div className="relative w-full h-screen">
-      <div ref={mapRef} className="w-full h-full" />
-      {children}
+    <div style={{ width: '100vw', height: '100vh' }}>
+      <LeafletMap
+        center={center}
+        zoom={zoom}
+        minZoom={MIN_ZOOM}
+        maxZoom={MAX_ZOOM}
+        style={{ width: '100%', height: '100%' }}
+        zoomControl={false}
+        maxBounds={RUSSIA_BOUNDS}
+        maxBoundsViscosity={1.0}
+      >
+        <TileLayer
+          attribution='© AI4Arctic 2026'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {geojsonData && (
+          <GeoJSON
+            key={`geojson-${year}`}
+            data={geojsonData}
+            style={geoJSONStyle}
+            pointToLayer={(geometry, latlng) => {
+              // Not used for polygon data but required by react-leaflet
+              return L.circleMarker(latlng, { radius: 0 });
+            }}
+          />
+        )}
+        <MapController onZoomChange={onZoomChange} />
+      </LeafletMap>
     </div>
   );
 }
