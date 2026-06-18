@@ -113,3 +113,8 @@ input:focus, textarea:focus, select:focus {
   width: 100%;
   height: 100%;
 }
+
+/* Hide Leaflet attribution prefix "Leaflet |" */
+.leaflet-control-attribution {
+  display: none !important;
+}

@@ -44,7 +44,9 @@ function createApiClient(): AxiosInstance {
           const { access_token } = response.data as { access_token: string };
           localStorage.setItem('access_token', access_token);
 
-          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${access_token}`;
+          }
           return client(originalRequest);
         } catch {
           // Refresh failed — clear session

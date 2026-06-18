@@ -1,12 +1,7 @@
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
+// Система авторизации отключена — все маршруты открыты
+import { Outlet } from 'react-router-dom';
 
 export function ProtectedRoute() {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
+  // Всегда пропускаем без проверки авторизации
   return <Outlet />;
 }
