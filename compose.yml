@@ -1,0 +1,59 @@
+networks:
+  app:
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PROJECT_NAME: ${PROJECT_NAME}
+      PROJECT_DESCRIPTION: ${PROJECT_DESCRIPTION}
+      PROJECT_VERSION: ${PROJECT_VERSION}
+
+      POSTGRES_SERVER: "db"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
+    networks:
+      - app
+
+  model:
+    build:
+      context: ./model
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    environment:
+      GRPC_HOST: "backend:50051"
+    networks:
+      - app
+    tty: true
+    stdin_open: true
+
+volumes:
+  postgres_data:

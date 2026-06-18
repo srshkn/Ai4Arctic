@@ -1,0 +1,43 @@
+# Docker Compose для фронтенда Ai4Arctic
+# Запуск: docker compose up --build
+# Остановить: docker compose down
+
+services:
+  # Фронтенд приложение
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai4arctic-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - ai4arctic
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Бекенд (если не запущен отдельно)
+  backend:
+    image: python:3.11-slim
+    container_name: ai4arctic-backend
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "pip install fastapi uvicorn[standard] pydantic-settings &&
+             uvicorn main:app --host 0.0.0.0 --port 8000"
+    environment:
+      - CORS_ORIGINS=http://localhost:3000
+    networks:
+      - ai4arctic
+    restart: unless-stopped
+
+networks:
+  ai4arctic:
+    driver: bridge

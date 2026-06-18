@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package geo;
+
+service GeoImportService {
+  rpc ImportMagtDataset(ImportMagtDatasetRequest) returns (ImportMagtDatasetResponse);
+}
+
+message ImportMagtDatasetRequest {
+  string geojson = 1;
+}
+
+message ImportMagtDatasetResponse {
+  bool success = 1;
+
+  string message = 3;
+}

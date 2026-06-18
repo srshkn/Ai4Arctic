@@ -1,0 +1,13 @@
+services:
+  backend:
+    #    build:
+    #      context: ./backend
+    #      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    expose:
+      - "50051"
+    volumes:
+      - ./backend:/app
+      - ./backend/certs:/app/certs:ro
+      - /app/.venv
