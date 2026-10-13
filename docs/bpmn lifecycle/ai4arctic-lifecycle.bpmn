@@ -1,0 +1,525 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_LifecycleStandalone" targetNamespace="https://example.org/ai4arctic/lifecycle" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.31.0">
+  <bpmn:message id="Message_Data" name="Новый пакет климатических данных готов" />
+  <bpmn:message id="Message_Retire" name="Запрос на вывод модели из эксплуатации" />
+  <bpmn:collaboration id="Collaboration_Lifecycle">
+    <bpmn:participant id="Pool_Lifecycle" name="Ai4Arctic — самостоятельный жизненный цикл" processRef="Process_Lifecycle" />
+    <bpmn:textAnnotation id="Note_Approval">
+      <bpmn:text>Согласование фиксирует: версию, автора, дату и причину.
+Первый выпуск: RMSE ≤ согласованного порога.
+Обновление: дополнительно RMSE кандидата &lt; RMSE текущей версии.
+При равенстве или ухудшении выпуск не допускается.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="Note_Project">
+      <bpmn:text>Ai4Arctic: ConvLSTM → температура мерзлоты MAGT.
+Обучение: физический TTOP-target; внешняя проверка — Obu / ESA CCI / GTN-P.
+Модель и карты проходят согласование как единый пакет.
+Схема описывает будущий процесс; RMSE вместо AUC — принятое допущение.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="Note_Links">
+      <bpmn:text>A — переход внутри ЭТОЙ схемы к подготовке / переобучению.
+К нему ведут доработка и обнаруженный дрейф.
+Рабочая версия продолжает обслуживать пользователей до выпуска замены.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="Note_Release">
+      <bpmn:text>Выпуск: версия ConvLSTM → прогноз MAGT → GeoJSON → backend / PostGIS.
+В проекте есть скрипты этих этапов; автоматическое согласование,
+дрейф, управление публикацией, Telegram и архив предлагается добавить.</bpmn:text>
+    </bpmn:textAnnotation>
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Lifecycle" name="Разработка, согласование, выпуск, обновление и архивирование модели" isExecutable="false">
+    <bpmn:documentation>Самостоятельная проектируемая схема Ai4Arctic. Все этапы находятся в одном процессе без вызовов других BPMN-файлов. Роль согласующего: один назначенный ML-инженер или аналитик. RMSE вместо AUC принято как допущение задания. Критерии первого выпуска и правила повторной оценки согласуются до обучения. Первый кандидат проходит порог допуска; обновление дополнительно должно строго улучшать RMSE текущей версии на общем независимом тесте. Работа опубликованной версии продолжается во время подготовки кандидатов. Мониторинг показан как обработка поступающих пакетов данных. Два события-ссылки A возвращают поток к подготовке в этом же процессе. Автоматизация согласования, дрейфа, выпуска, уведомлений и архива предлагается к реализации; схема не запускает код. Технические ошибки, восстановление и отмена посреди обучения не детализированы.</bpmn:documentation>
+    <bpmn:laneSet id="Lanes_Lifecycle">
+      <bpmn:lane id="Lane_Ops" name="Эксплуатация — сервис и ответственный ML-инженер / аналитик">
+        <bpmn:flowNodeRef>Release</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Notify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>NewData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Drift</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>DriftDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Link_Retrain</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>RetireRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>RetireApproval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>RetireDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Archive</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Archived</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_ML" name="Подготовка данных и ML pipeline">
+        <bpmn:flowNodeRef>Link_Prepare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Prepare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Train</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Evaluate</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Human" name="Согласование — ML-инженер или аналитик">
+        <bpmn:flowNodeRef>Start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Requirements</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Revise</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Link_Rework</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>HasCurrent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Rejected</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start" name="Потребность в модели&#10;прогноза">
+      <bpmn:outgoing>f01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Requirements" name="Согласовать задачу&#10;и критерии качества">
+      <bpmn:documentation>Назначенный ML-инженер или аналитик согласует территорию, период, назначение прогнозов, ограничения и критерии качества. Зафиксировать основной RMSE в °C, предел первого выпуска RMSE_max, дополнительные проверки MAE/Bias, карт и независимых эталонов. Значение RMSE_max не выдумывается: задаётся до обучения. Согласовать источник независимого теста, роли, данные и порядок повторной оценки. Завершение User Task означает, что требования согласованы; обсуждение и правки происходят внутри задачи. При старте рабочей версии нет.</bpmn:documentation>
+      <bpmn:incoming>f01</bpmn:incoming>
+      <bpmn:outgoing>f02</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Review" name="Проверить отчёт и карты;&#10;принять решение&#10;о выпуске">
+      <bpmn:documentation>Один назначенный ML-инженер ИЛИ аналитик проверяет отчёт, независимость теста, качество данных, физическую правдоподобность карт и ограничения. Результаты: approved / rework / rejected. approved допустимо только при выполнении согласованных критериев, а для обновления также при строгом улучшении RMSE. Равенство и ухудшение не допускают выпуск. Фиксировать автора, время, комментарий и точную версию пакета. Изменение пакета после одобрения требует повторного согласования. До завершения User Task процесс ждёт. Автоматическая проверка допустимости решения должна быть добавлена при реализации.</bpmn:documentation>
+      <bpmn:incoming>f06</bpmn:incoming>
+      <bpmn:outgoing>f07</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Decision" name="Решение согласующего?" default="f11">
+      <bpmn:incoming>f07</bpmn:incoming>
+      <bpmn:outgoing>f08</bpmn:outgoing>
+      <bpmn:outgoing>f09</bpmn:outgoing>
+      <bpmn:outgoing>f11</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Revise" name="Указать замечания&#10;и план доработки">
+      <bpmn:documentation>Зафиксировать замечания и конкретный план изменения данных, конфигурации или отчёта. После доработки весь путь подготовки, обучения, оценки и согласования повторяется. Изменение требований допускается только с повторным согласованием; это организационный шаг внутри планирования доработки.</bpmn:documentation>
+      <bpmn:incoming>f09</bpmn:incoming>
+      <bpmn:outgoing>f10</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:intermediateThrowEvent id="Link_Rework" name="A: к подготовке">
+      <bpmn:incoming>f10</bpmn:incoming>
+      <bpmn:linkEventDefinition id="Link_Rework_event" name="A_PREPARE">
+        <bpmn:target>Link_Prepare_event</bpmn:target>
+      </bpmn:linkEventDefinition>
+    </bpmn:intermediateThrowEvent>
+    <bpmn:serviceTask id="Reject" name="Зафиксировать отказ&#10;и уведомить в Telegram">
+      <bpmn:documentation>Записать причину отказа, метрики и версию кандидата; уведомить ответственную команду в Telegram. При наличии рабочей версии оставить её и карты без изменения; при первом выпуске завершить инициативу без публикации.</bpmn:documentation>
+      <bpmn:incoming>f11</bpmn:incoming>
+      <bpmn:outgoing>f12</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="HasCurrent" name="Рабочая версия есть?" default="f13">
+      <bpmn:incoming>f12</bpmn:incoming>
+      <bpmn:outgoing>f13</bpmn:outgoing>
+      <bpmn:outgoing>f14</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="End_Rejected" name="Первый выпуск&#10;отклонён">
+      <bpmn:incoming>f13</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:intermediateCatchEvent id="Link_Prepare" name="A: подготовка /&#10;переобучение">
+      <bpmn:outgoing>f03</bpmn:outgoing>
+      <bpmn:linkEventDefinition id="Link_Prepare_event" name="A_PREPARE">
+        <bpmn:source>Link_Rework_event</bpmn:source>
+        <bpmn:source>Link_Retrain_event</bpmn:source>
+      </bpmn:linkEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="Prepare" name="Подготовить данные,&#10;TTOP-target и&#10;train / validation / test">
+      <bpmn:documentation>Основа: model/scripts/gee_export.py, merge_bands.py, rasterize_extended.py, compute_target_23y.py, model/src/data.py. Данные GEE/ERA5 и другие источники проекта; физический TTOP-target с rk(landcover). Разделить обучение, validation для настройки и независимый test. Внешняя проверка: Obu, ESA CCI, GTN-P при наличии подходящих данных. Целевая физическая формула и независимые измерения не считаются одним и тем же эталоном. Нормализация и коррекции настраиваются без использования теста. При повторных доработках не подбирать параметры по одному и тому же финальному тесту: сохранять отдельный неиспользованный holdout или применять заранее согласованный протокол повторной оценки.</bpmn:documentation>
+      <bpmn:incoming>f02</bpmn:incoming>
+      <bpmn:incoming>f03</bpmn:incoming>
+      <bpmn:outgoing>f04</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Train" name="Обучить / переобучить&#10;ConvLSTM; сохранить&#10;версию кандидата">
+      <bpmn:documentation>Существующая основа: model/src/ablation.py::train_one_config, model/scripts/train_extended_21years.py, train_p3_model_A_ensemble.py. Зафиксировать данные, параметры, seed, признаки, веса, нормализацию и постобработку в версии кандидата. Рабочая версия при переобучении остаётся опубликованной. Автоматический запуск и версионирование проектируются.</bpmn:documentation>
+      <bpmn:incoming>f04</bpmn:incoming>
+      <bpmn:outgoing>f05</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Evaluate" name="Рассчитать RMSE, MAE;&#10;проверить карты;&#10;подготовить отчёт">
+      <bpmn:documentation>Основа: model/src/metrics.py и notebooks/04_validation.ipynb. Рассчитать RMSE в °C, MAE, Bias и другие согласованные показатели, подготовить карты и ограничения. При обновлении оценить кандидата и действующую версию на общей независимой выборке, одинаковой маске валидных точек и в одинаковых единицах. Каждая версия использует свои сохранённые параметры без настройки на тесте. При первом выпуске проверить RMSE_max; при обновлении дополнительно требуется rmse_candidate &lt; rmse_current. Будущие синтетические прогнозы не служат истинными тестовыми значениями.</bpmn:documentation>
+      <bpmn:incoming>f05</bpmn:incoming>
+      <bpmn:outgoing>f06</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Release" name="Выпустить модель;&#10;пересчитать и опубликовать&#10;карты MAGT">
+      <bpmn:documentation>Выход допускается только для одобренного фиксированного пакета. Назначить рабочую версию ConvLSTM, пересчитать MAGT, экспортировать GeoJSON и безопасно опубликовать согласованный набор карт в backend/PostGIS. Основа: model/src/inference.py, model/scripts/projection_2026_2035.py, export_gis_all_years.py, export_geojson_smooth.py, model/grpc_client/client.py. Параметризация и безопасная замена опубликованного набора требуют реализации. Сохранить предыдущую версию, отчёт и связь checkpoint → данные → карты. После успеха current_exists=true. Сервис проекта выдаёт подготовленные карты; выпуск не предполагает уже имеющийся API онлайн-инференса.</bpmn:documentation>
+      <bpmn:incoming>f08</bpmn:incoming>
+      <bpmn:outgoing>f15</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Notify" name="Уведомить о выпуске&#10;в Telegram">
+      <bpmn:documentation>Проектируемая интеграция Telegram: версия, период данных, RMSE, решение и автор согласования, результат публикации и ссылка на карты.</bpmn:documentation>
+      <bpmn:incoming>f15</bpmn:incoming>
+      <bpmn:outgoing>f16</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:eventBasedGateway id="Wait" name="Ожидать событие&#10;в эксплуатации">
+      <bpmn:documentation>Событийный шлюз ждёт первое из двух внешних событий: готовность новой поставки климатических данных или запрос на вывод. Это ожидание событий, а не проверка булевых условий. После обработки возвращается к ожиданию. Детализация очередей и запросов, поступающих во время обучения, отнесена к реализации. Рабочий веб-сервис продолжает выдавать карты во время ожидания и подготовки обновлений.</bpmn:documentation>
+      <bpmn:incoming>f14</bpmn:incoming>
+      <bpmn:incoming>f16</bpmn:incoming>
+      <bpmn:incoming>f21</bpmn:incoming>
+      <bpmn:incoming>f26</bpmn:incoming>
+      <bpmn:outgoing>f17</bpmn:outgoing>
+      <bpmn:outgoing>f22</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="NewData" name="Новые климатические&#10;данные">
+      <bpmn:incoming>f17</bpmn:incoming>
+      <bpmn:outgoing>f18</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="NewData_event" messageRef="Message_Data" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="Drift" name="Загрузить данные;&#10;проверить дрейф&#10;признаков">
+      <bpmn:documentation>Предлагаемый детектор сравнивает распределения новых климатических признаков (MAAT, LST_winter, TDD, LST_annual, FDD, era5_temp) с эталоном рабочей версии. Проверить входные данные, сезонную сопоставимость и пропуски. Метод и пороги задаются конфигурацией. Дрейф является сигналом проверки и переобучения, а не доказательством ухудшения ошибки. При отсутствии дрейфа сохранить текущую версию.</bpmn:documentation>
+      <bpmn:incoming>f18</bpmn:incoming>
+      <bpmn:outgoing>f19</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="DriftDecision" name="Дрейф обнаружен?" default="f21">
+      <bpmn:incoming>f19</bpmn:incoming>
+      <bpmn:outgoing>f20</bpmn:outgoing>
+      <bpmn:outgoing>f21</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:intermediateThrowEvent id="Link_Retrain" name="A: к переобучению">
+      <bpmn:incoming>f20</bpmn:incoming>
+      <bpmn:linkEventDefinition id="Link_Retrain_event" name="A_PREPARE">
+        <bpmn:target>Link_Prepare_event</bpmn:target>
+      </bpmn:linkEventDefinition>
+    </bpmn:intermediateThrowEvent>
+    <bpmn:intermediateCatchEvent id="RetireRequest" name="Запрос на вывод&#10;из эксплуатации">
+      <bpmn:incoming>f22</bpmn:incoming>
+      <bpmn:outgoing>f23</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="RetireRequest_event" messageRef="Message_Retire" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="RetireApproval" name="Согласовать вывод&#10;из эксплуатации">
+      <bpmn:documentation>ML-инженер или аналитик подтверждает либо отклоняет запрос на завершение использования модели. Проверить наличие потребителей, необходимость доступности карт и срок хранения. Зафиксировать retire_approved, автора и причину. Снятие публикации возможно только после одобрения.</bpmn:documentation>
+      <bpmn:incoming>f23</bpmn:incoming>
+      <bpmn:outgoing>f24</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="RetireDecision" name="Вывод одобрен?" default="f26">
+      <bpmn:incoming>f24</bpmn:incoming>
+      <bpmn:outgoing>f25</bpmn:outgoing>
+      <bpmn:outgoing>f26</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Archive" name="Архивировать версию&#10;и решения; снять карты;&#10;уведомить в Telegram">
+      <bpmn:documentation>После согласования остановить дальнейшее использование модели, снять активную публикацию её карт и архивировать веса, параметры, версии данных, карты, отчёты и все решения. Отправить Telegram-уведомление. Физическое удаление данных не подразумевается. Это проектируемый этап, готовой автоматизации в репозитории нет.</bpmn:documentation>
+      <bpmn:incoming>f25</bpmn:incoming>
+      <bpmn:outgoing>f27</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="End_Archived" name="Модель выведена&#10;из эксплуатации">
+      <bpmn:incoming>f27</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="f01" sourceRef="Start" targetRef="Requirements" />
+    <bpmn:sequenceFlow id="f02" sourceRef="Requirements" targetRef="Prepare" />
+    <bpmn:sequenceFlow id="f06" sourceRef="Evaluate" targetRef="Review" />
+    <bpmn:sequenceFlow id="f07" sourceRef="Review" targetRef="Decision" />
+    <bpmn:sequenceFlow id="f08" name="Одобрено" sourceRef="Decision" targetRef="Release">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">decision = "approved"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f09" name="Доработка" sourceRef="Decision" targetRef="Revise">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">decision = "rework"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f11" name="Отклонено" sourceRef="Decision" targetRef="Reject" />
+    <bpmn:sequenceFlow id="f10" sourceRef="Revise" targetRef="Link_Rework" />
+    <bpmn:sequenceFlow id="f12" sourceRef="Reject" targetRef="HasCurrent" />
+    <bpmn:sequenceFlow id="f13" name="Нет" sourceRef="HasCurrent" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="f14" name="Да: сохранить текущую" sourceRef="HasCurrent" targetRef="Wait">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">current_exists = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f03" sourceRef="Link_Prepare" targetRef="Prepare" />
+    <bpmn:sequenceFlow id="f04" sourceRef="Prepare" targetRef="Train" />
+    <bpmn:sequenceFlow id="f05" sourceRef="Train" targetRef="Evaluate" />
+    <bpmn:sequenceFlow id="f15" sourceRef="Release" targetRef="Notify" />
+    <bpmn:sequenceFlow id="f16" sourceRef="Notify" targetRef="Wait" />
+    <bpmn:sequenceFlow id="f21" name="Нет: продолжить эксплуатацию" sourceRef="DriftDecision" targetRef="Wait" />
+    <bpmn:sequenceFlow id="f26" name="Нет: продолжить эксплуатацию" sourceRef="RetireDecision" targetRef="Wait" />
+    <bpmn:sequenceFlow id="f17" sourceRef="Wait" targetRef="NewData" />
+    <bpmn:sequenceFlow id="f22" sourceRef="Wait" targetRef="RetireRequest" />
+    <bpmn:sequenceFlow id="f18" sourceRef="NewData" targetRef="Drift" />
+    <bpmn:sequenceFlow id="f19" sourceRef="Drift" targetRef="DriftDecision" />
+    <bpmn:sequenceFlow id="f20" name="Да" sourceRef="DriftDecision" targetRef="Link_Retrain">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">drift_detected = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f23" sourceRef="RetireRequest" targetRef="RetireApproval" />
+    <bpmn:sequenceFlow id="f24" sourceRef="RetireApproval" targetRef="RetireDecision" />
+    <bpmn:sequenceFlow id="f25" name="Да" sourceRef="RetireDecision" targetRef="Archive">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">retire_approved = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f27" sourceRef="Archive" targetRef="End_Archived" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_Lifecycle">
+    <bpmndi:BPMNPlane id="Plane_Lifecycle" bpmnElement="Collaboration_Lifecycle">
+      <bpmndi:BPMNShape id="Pool_Lifecycle_di" bpmnElement="Pool_Lifecycle" isHorizontal="true">
+        <dc:Bounds x="160" y="70" width="3210" height="1260" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Ops_di" bpmnElement="Lane_Ops" isHorizontal="true">
+        <dc:Bounds x="190" y="730" width="3180" height="600" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_ML_di" bpmnElement="Lane_ML" isHorizontal="true">
+        <dc:Bounds x="190" y="400" width="3180" height="330" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Human_di" bpmnElement="Lane_Human" isHorizontal="true">
+        <dc:Bounds x="190" y="70" width="3180" height="330" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_di" bpmnElement="Start">
+        <dc:Bounds x="260" y="172" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="222" y="219" width="116" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Requirements_di" bpmnElement="Requirements">
+        <dc:Bounds x="360" y="150" width="200" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Review_di" bpmnElement="Review">
+        <dc:Bounds x="1190" y="150" width="200" height="85" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Decision_di" bpmnElement="Decision" isMarkerVisible="true">
+        <dc:Bounds x="1460" y="167" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1531" y="238" width="128" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Revise_di" bpmnElement="Revise">
+        <dc:Bounds x="2410" y="280" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Link_Rework_di" bpmnElement="Link_Rework">
+        <dc:Bounds x="2680" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2666" y="350" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Reject_di" bpmnElement="Reject">
+        <dc:Bounds x="1680" y="150" width="180" height="85" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="HasCurrent_di" bpmnElement="HasCurrent" isMarkerVisible="true">
+        <dc:Bounds x="1990" y="167" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1956" y="122" width="114" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Rejected_di" bpmnElement="End_Rejected">
+        <dc:Bounds x="2180" y="174" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2161" y="223" width="79" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Link_Prepare_di" bpmnElement="Link_Prepare">
+        <dc:Bounds x="260" y="502" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="242" y="550" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Prepare_di" bpmnElement="Prepare">
+        <dc:Bounds x="360" y="480" width="200" height="85" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Train_di" bpmnElement="Train">
+        <dc:Bounds x="640" y="480" width="200" height="85" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Evaluate_di" bpmnElement="Evaluate">
+        <dc:Bounds x="920" y="480" width="200" height="85" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Release_di" bpmnElement="Release">
+        <dc:Bounds x="1660" y="795" width="210" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Notify_di" bpmnElement="Notify">
+        <dc:Bounds x="1920" y="795" width="170" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Wait_di" bpmnElement="Wait">
+        <dc:Bounds x="2170" y="812" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2144" y="754" width="92" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NewData_di" bpmnElement="NewData">
+        <dc:Bounds x="2360" y="795" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2328" y="850" width="114" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Drift_di" bpmnElement="Drift">
+        <dc:Bounds x="2540" y="770" width="180" height="85" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DriftDecision_di" bpmnElement="DriftDecision" isMarkerVisible="true">
+        <dc:Bounds x="2780" y="788" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2755" y="740" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Link_Retrain_di" bpmnElement="Link_Retrain">
+        <dc:Bounds x="2920" y="795" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2897" y="840" width="96" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RetireRequest_di" bpmnElement="RetireRequest">
+        <dc:Bounds x="2360" y="1062" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2342" y="1115" width="87" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RetireApproval_di" bpmnElement="RetireApproval">
+        <dc:Bounds x="2540" y="1040" width="180" height="85" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RetireDecision_di" bpmnElement="RetireDecision" isMarkerVisible="true">
+        <dc:Bounds x="2780" y="1057" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2772" y="1010" width="86" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Archive_di" bpmnElement="Archive">
+        <dc:Bounds x="2960" y="1040" width="200" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Archived_di" bpmnElement="End_Archived">
+        <dc:Bounds x="3260" y="1067" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3226" y="1115" width="93" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Note_Approval_di" bpmnElement="Note_Approval">
+        <dc:Bounds x="2830" y="130" width="480" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Note_Project_di" bpmnElement="Note_Project">
+        <dc:Bounds x="2360" y="440" width="940" height="125" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Note_Links_di" bpmnElement="Note_Links">
+        <dc:Bounds x="380" y="610" width="880" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Note_Release_di" bpmnElement="Note_Release">
+        <dc:Bounds x="430" y="850" width="930" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="f01_di" bpmnElement="f01">
+        <di:waypoint x="296" y="190" />
+        <di:waypoint x="360" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f02_di" bpmnElement="f02">
+        <di:waypoint x="460" y="230" />
+        <di:waypoint x="460" y="480" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f03_di" bpmnElement="f03">
+        <di:waypoint x="296" y="520" />
+        <di:waypoint x="360" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f04_di" bpmnElement="f04">
+        <di:waypoint x="560" y="520" />
+        <di:waypoint x="640" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f05_di" bpmnElement="f05">
+        <di:waypoint x="840" y="520" />
+        <di:waypoint x="920" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f06_di" bpmnElement="f06">
+        <di:waypoint x="1120" y="520" />
+        <di:waypoint x="1290" y="520" />
+        <di:waypoint x="1290" y="235" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f07_di" bpmnElement="f07">
+        <di:waypoint x="1390" y="192" />
+        <di:waypoint x="1460" y="192" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f08_di" bpmnElement="f08">
+        <di:waypoint x="1485" y="217" />
+        <di:waypoint x="1485" y="837" />
+        <di:waypoint x="1660" y="837" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1514" y="690" width="52" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f09_di" bpmnElement="f09">
+        <di:waypoint x="1485" y="167" />
+        <di:waypoint x="1485" y="105" />
+        <di:waypoint x="2500" y="105" />
+        <di:waypoint x="2500" y="280" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2143" y="78" width="55" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f10_di" bpmnElement="f10">
+        <di:waypoint x="2590" y="320" />
+        <di:waypoint x="2680" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f11_di" bpmnElement="f11">
+        <di:waypoint x="1510" y="192" />
+        <di:waypoint x="1680" y="192" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1567" y="160" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f12_di" bpmnElement="f12">
+        <di:waypoint x="1860" y="192" />
+        <di:waypoint x="1990" y="192" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f13_di" bpmnElement="f13">
+        <di:waypoint x="2040" y="192" />
+        <di:waypoint x="2180" y="192" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2101" y="160" width="19" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f14_di" bpmnElement="f14">
+        <di:waypoint x="2015" y="217" />
+        <di:waypoint x="2015" y="630" />
+        <di:waypoint x="2195" y="630" />
+        <di:waypoint x="2195" y="812" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2043" y="575" width="120" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f15_di" bpmnElement="f15">
+        <di:waypoint x="1870" y="837" />
+        <di:waypoint x="1920" y="837" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f16_di" bpmnElement="f16">
+        <di:waypoint x="2090" y="837" />
+        <di:waypoint x="2170" y="837" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f17_di" bpmnElement="f17">
+        <di:waypoint x="2220" y="837" />
+        <di:waypoint x="2300" y="837" />
+        <di:waypoint x="2300" y="813" />
+        <di:waypoint x="2360" y="813" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f18_di" bpmnElement="f18">
+        <di:waypoint x="2396" y="813" />
+        <di:waypoint x="2540" y="813" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f19_di" bpmnElement="f19">
+        <di:waypoint x="2720" y="813" />
+        <di:waypoint x="2780" y="813" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f20_di" bpmnElement="f20">
+        <di:waypoint x="2830" y="813" />
+        <di:waypoint x="2920" y="813" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2871" y="782" width="14" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f21_di" bpmnElement="f21">
+        <di:waypoint x="2805" y="838" />
+        <di:waypoint x="2805" y="935" />
+        <di:waypoint x="2245" y="935" />
+        <di:waypoint x="2245" y="860" />
+        <di:waypoint x="2202" y="855" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2490" y="907" width="161" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f22_di" bpmnElement="f22">
+        <di:waypoint x="2195" y="862" />
+        <di:waypoint x="2195" y="1080" />
+        <di:waypoint x="2360" y="1080" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f23_di" bpmnElement="f23">
+        <di:waypoint x="2396" y="1080" />
+        <di:waypoint x="2540" y="1080" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f24_di" bpmnElement="f24">
+        <di:waypoint x="2720" y="1080" />
+        <di:waypoint x="2780" y="1080" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f25_di" bpmnElement="f25">
+        <di:waypoint x="2830" y="1082" />
+        <di:waypoint x="2960" y="1082" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2886" y="1050" width="14" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f26_di" bpmnElement="f26">
+        <di:waypoint x="2805" y="1107" />
+        <di:waypoint x="2805" y="1250" />
+        <di:waypoint x="2125" y="1250" />
+        <di:waypoint x="2125" y="854" />
+        <di:waypoint x="2187" y="854" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2375" y="1217" width="161" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f27_di" bpmnElement="f27">
+        <di:waypoint x="3160" y="1085" />
+        <di:waypoint x="3260" y="1085" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
